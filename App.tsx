@@ -1,16 +1,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { NavigationTab, Contact, Deal, BrandProfile, AdCampaign, ChatLog } from './types';
+import { NavigationTab, NavigationTabType, Contact, Deal, BrandProfile, Task, ChatLog } from './types';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import ContactList from './components/ContactList';
 import DealsPipeline from './components/DealsPipeline';
+import ActionMatrix from './components/ActionMatrix';
 import AIConsultant from './components/AIConsultant';
 import MarketingCenter from './components/MarketingCenter';
+import MarketIntelligence from './components/MarketIntelligence';
 import AccountSettings from './components/AccountSettings';
 import SmartGuide from './components/SmartGuide';
-import { parseGlobalCommand, runBackgroundEmpathySync } from './services/geminiService';
-import { getContacts, getDeals, getBrandProfile, saveContact, saveDeal, updateBrandProfile, isSupabaseConfigured } from './services/supabaseService';
+import { parseGlobalCommand } from './services/geminiService';
+import { getContacts, getDeals, getTasks, getBrandProfile, saveContact, saveDeal, saveTask, deleteTask, updateBrandProfile, isSupabaseConfigured } from './services/supabaseService';
 
 const INITIAL_BRAND: BrandProfile = {
   name: 'Omni Digital',
@@ -23,9 +25,10 @@ const INITIAL_BRAND: BrandProfile = {
 };
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<NavigationTab>(NavigationTab.Dashboard);
+  const [activeTab, setActiveTab] = useState<NavigationTabType>(NavigationTab.Dashboard);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [brand, setBrand] = useState<BrandProfile>(INITIAL_BRAND);
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -34,11 +37,7 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [darkMode, setDarkMode] = useState(false);
   const [isAIProcessing, setIsAIProcessing] = useState(false);
-  const [isNeuralSyncing, setIsNeuralSyncing] = useState(false);
   const [isCloudLoading, setIsCloudLoading] = useState(isSupabaseConfigured);
-
-  const lastSyncRef = useRef<number>(0);
-  const lastStateHash = useRef<string>("");
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -48,13 +47,15 @@ const App: React.FC = () => {
     const fetchInitialData = async () => {
       setIsCloudLoading(true);
       try {
-        const [dbContacts, dbDeals, dbBrand] = await Promise.all([
+        const [dbContacts, dbDeals, dbTasks, dbBrand] = await Promise.all([
           getContacts(),
           getDeals(),
+          getTasks(),
           getBrandProfile()
         ]);
         if (dbContacts.length > 0) setContacts(dbContacts);
         if (dbDeals.length > 0) setDeals(dbDeals);
+        if (dbTasks.length > 0) setTasks(dbTasks);
         if (dbBrand) setBrand(dbBrand);
       } catch (err) {
         console.error("Supabase initial sync failed:", err);
@@ -64,84 +65,6 @@ const App: React.FC = () => {
     };
     fetchInitialData();
   }, []);
-
-  // Neural Sync Loop - Triggered by significant state changes
-  useEffect(() => {
-    const triggerSilentSync = async () => {
-      const now = Date.now();
-      const currentStateHash = JSON.stringify({
-        contactCount: contacts.length,
-        chatCount: brand.aiMemory?.chatHistory?.length || 0,
-        lang: language
-      });
-
-      // Avoid re-syncing if state hasn't changed enough or too soon
-      if (now - lastSyncRef.current < 45000 || isCloudLoading || currentStateHash === lastStateHash.current) return; 
-      
-      setIsNeuralSyncing(true);
-      lastStateHash.current = currentStateHash;
-      
-      try {
-        const intel = await runBackgroundEmpathySync(contacts, brand.aiMemory?.chatHistory || [], brand, language);
-        if (intel) {
-          let updatedBrand = { ...brand };
-          let changed = false;
-
-          if (intel.userPsychology && intel.userPsychology.stressLevel !== brand.userPsychology?.stressLevel) {
-            updatedBrand = {
-              ...brand,
-              userPsychology: {
-                stressLevel: intel.userPsychology.stressLevel,
-                focusArea: brand.userPsychology?.focusArea || 'Strategic Growth',
-                managementStyle: intel.userPsychology.managementStyle
-              }
-            };
-            setBrand(updatedBrand);
-            changed = true;
-          }
-
-          if (intel.contactPsychology) {
-            const updatedContacts = contacts.map(c => {
-              const found = intel.contactPsychology.find((p: any) => p.name === c.name);
-              if (found) {
-                const uContact = { 
-                  ...c, 
-                  psychology: { 
-                    ...c.psychology!, 
-                    personalityType: found.personality as any, 
-                    sentimentScore: found.satisfaction, 
-                    happinessStatus: found.status as any 
-                  } 
-                };
-                return uContact;
-              }
-              return c;
-            });
-            // Update local state and Supabase silently
-            setContacts(updatedContacts);
-            if (isSupabaseConfigured) {
-              for (const uc of updatedContacts) {
-                if (JSON.stringify(uc.psychology) !== JSON.stringify(contacts.find(c => c.id === uc.id)?.psychology)) {
-                  saveContact(uc);
-                }
-              }
-            }
-          }
-          
-          if (changed && isSupabaseConfigured) {
-            await updateBrandProfile(updatedBrand);
-          }
-        }
-      } catch (e) {
-        console.warn("Silent context sync paused.");
-      } finally {
-        setIsNeuralSyncing(false);
-        lastSyncRef.current = now;
-      }
-    };
-    
-    if (!isCloudLoading) triggerSilentSync();
-  }, [brand.aiMemory?.chatHistory?.length, contacts.length, language]);
 
   useEffect(() => {
     if (darkMode) document.documentElement.classList.add('dark');
@@ -158,13 +81,23 @@ const App: React.FC = () => {
     if (isSupabaseConfigured) await saveDeal(d);
   };
 
-  const handleUpdateBrand = async (newBrand: BrandProfile) => {
-    setBrand(newBrand);
-    if (isSupabaseConfigured) await updateBrandProfile(newBrand);
+  const handleAddTask = async (t: Task) => {
+    setTasks(prev => [t, ...prev]);
+    if (isSupabaseConfigured) await saveTask(t);
   };
 
-  const saveAdToMemory = async (campaign: AdCampaign) => {
-    const newBrand = { ...brand, aiMemory: { ...brand.aiMemory!, adHistory: [campaign, ...(brand.aiMemory?.adHistory || [])].slice(0, 10) } };
+  const handleToggleTask = async (id: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: t.status === 'Pending' ? 'Completed' : 'Pending' } : t));
+    const task = tasks.find(t => t.id === id);
+    if (task && isSupabaseConfigured) await saveTask({ ...task, status: task.status === 'Pending' ? 'Completed' : 'Pending' });
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+    if (isSupabaseConfigured) await deleteTask(id);
+  };
+
+  const handleUpdateBrand = async (newBrand: BrandProfile) => {
     setBrand(newBrand);
     if (isSupabaseConfigured) await updateBrandProfile(newBrand);
   };
@@ -181,17 +114,18 @@ const App: React.FC = () => {
     setIsAIProcessing(true);
     try {
       const result = await parseGlobalCommand(searchQuery, language);
-      console.log("OmniCommand Result:", result);
-      // Optional: process 'add_contact' etc here
+      if (result.action === 'add_contact') setActiveTab(NavigationTab.Contacts);
     } catch (e) {
-      console.error(e);
     } finally {
       setIsAIProcessing(false);
       setSearchQuery('');
     }
   };
 
-  const t = { en: { subtitle: 'Strategic Management OS', searchPlaceholder: 'Strategic Command...' }, ar: { subtitle: 'نظام الإدارة الاستراتيجي', searchPlaceholder: 'أمر استراتيجي...' } }[language];
+  const t = { 
+    en: { subtitle: 'Strategic Management OS', searchPlaceholder: 'Strategic Command...' }, 
+    ar: { subtitle: 'نظام الإدارة الاستراتيجي', searchPlaceholder: 'أمر استراتيجي...' } 
+  }[language];
 
   return (
     <div className={`flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden transition-all duration-700 ${language === 'ar' ? 'font-arabic' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
@@ -216,10 +150,7 @@ const App: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                 <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.4em]">{t.subtitle}</p>
-                 {isNeuralSyncing && <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping"></span>}
-              </div>
+              <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.4em]">{t.subtitle}</p>
             </div>
           </div>
           <form onSubmit={handleGlobalSearch} className="flex-1 max-w-2xl relative w-full group">
@@ -227,8 +158,8 @@ const App: React.FC = () => {
             <i className={`fa-solid ${isAIProcessing ? 'fa-spinner-third animate-spin' : 'fa-wand-magic-sparkles'} absolute ${language === 'ar' ? 'right-7' : 'left-7'} top-1/2 -translate-y-1/2 text-indigo-500 text-xl`}></i>
           </form>
           <div className="flex items-center gap-6">
-            <button onClick={() => setDarkMode(!darkMode)} className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 transition-all shadow-sm hover:scale-105"><i className={`fa-solid ${darkMode ? 'fa-sun' : 'fa-moon'} text-xl`}></i></button>
-            <div className="flex bg-slate-100 dark:bg-slate-800/50 p-2 rounded-[1.5rem] border border-slate-200 dark:border-slate-700 shadow-sm">
+            <button onClick={() => setDarkMode(!darkMode)} className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 shadow-sm transition-all"><i className={`fa-solid ${darkMode ? 'fa-sun' : 'fa-moon'} text-xl`}></i></button>
+            <div className="flex bg-slate-100 dark:bg-slate-800/50 p-2 rounded-[1.5rem] border border-slate-200 dark:border-slate-700">
               <button onClick={() => setLanguage('en')} className={`px-5 py-2.5 text-[10px] font-black rounded-xl transition-all ${language === 'en' ? 'bg-indigo-600 text-white shadow-xl' : 'text-slate-400'}`}>EN</button>
               <button onClick={() => setLanguage('ar')} className={`px-5 py-2.5 text-[10px] font-black rounded-xl transition-all ${language === 'ar' ? 'bg-indigo-600 text-white shadow-xl' : 'text-slate-400'}`}>AR</button>
             </div>
@@ -245,7 +176,9 @@ const App: React.FC = () => {
               {activeTab === NavigationTab.Dashboard && <Dashboard contacts={contacts} deals={deals} language={language} brand={brand} />}
               {activeTab === NavigationTab.Contacts && <ContactList contacts={contacts} language={language} onAddContact={handleAddContact} />}
               {activeTab === NavigationTab.Deals && <DealsPipeline deals={deals} contacts={contacts} language={language} onAddDeal={handleAddDeal} />}
-              {activeTab === NavigationTab.Marketing && <MarketingCenter language={language} brand={brand} onCampaignCreated={saveAdToMemory} />}
+              {activeTab === NavigationTab.Tasks && <ActionMatrix tasks={tasks} deals={deals} contacts={contacts} language={language} onAddTask={handleAddTask} onToggleTask={handleToggleTask} onDeleteTask={handleDeleteTask} />}
+              {activeTab === NavigationTab.Intelligence && <MarketIntelligence brand={brand} language={language} />}
+              {activeTab === NavigationTab.Marketing && <MarketingCenter language={language} brand={brand} />}
               {activeTab === NavigationTab.AI_Consultant && <AIConsultant contacts={contacts} deals={deals} language={language} onMessageLogged={saveChatToMemory} memory={brand.aiMemory?.chatHistory} />}
               {activeTab === NavigationTab.Settings && <AccountSettings language={language} brand={brand} setBrand={handleUpdateBrand} />}
             </>

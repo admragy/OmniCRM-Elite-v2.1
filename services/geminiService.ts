@@ -6,182 +6,117 @@ const getAIClient = () => {
 };
 
 /**
- * تحليل أداء الإعلانات واقتراح تحسينات مستقبلية بناءً على النتائج
+ * جلب آخر أخبار واتجاهات السوق بناءً على مجال عمل المستخدم
  */
-export const getAdOptimizationInsights = async (
-  adA: string, 
-  adB: string, 
-  metrics: { A: any; B: any }, 
-  language: 'en' | 'ar'
-): Promise<string> => {
+export const getMarketIntelligence = async (industry: string, language: 'en' | 'ar'): Promise<{ report: string; trends: any[] }> => {
   const ai = getAIClient();
   const targetLang = language === 'ar' ? 'Arabic' : 'English';
   
   const prompt = `
     CRITICAL: Respond ONLY in ${targetLang}.
-    Act as a Performance Marketing Analyst.
-    
-    DATA TO ANALYZE:
-    Variant A Copy: "${adA}"
-    Variant A Metrics: CTR ${metrics.A.ctr}%, Engagement ${metrics.A.engagement}
-    
-    Variant B Copy: "${adB}"
-    Variant B Metrics: CTR ${metrics.B.ctr}%, Engagement ${metrics.B.engagement}
-    
-    TASK:
-    1. Determine which variant is statistically superior for its goal.
-    2. Analyze WHY (tone, hook, call-to-action differences).
-    3. Provide 3 specific optimizations for the NEXT campaign to beat these benchmarks.
-    
-    Format: Structured strategic brief.
+    As a Market Intelligence Analyst, search for the latest news, shifts, and emerging trends in the ${industry} industry for this week.
+    Identify 3 major opportunities and 2 potential threats.
+    Format: Professional Strategic Brief.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: "gemini-3-pro-preview",
       contents: prompt,
-      config: { thinkingConfig: { thinkingBudget: 0 } }
+      config: { tools: [{ googleSearch: {} }] },
     });
-    return response.text || "Optimization analysis failed.";
+    return { 
+      report: response.text || "No intelligence found.", 
+      trends: response.candidates?.[0]?.groundingMetadata?.groundingChunks || [] 
+    };
   } catch (error) {
-    return "Error generating optimization insights.";
+    return { report: "Search engine busy.", trends: [] };
   }
 };
 
 /**
- * توليد تقرير تدقيق استراتيجي شامل للنظام
+ * إثراء بيانات العميل عبر البحث في الويب
  */
-export const generateStrategicAuditReport = async (contacts: any[], deals: any[], brand: any, language: 'en' | 'ar'): Promise<string> => {
+export const enrichContactData = async (companyName: string, language: 'en' | 'ar'): Promise<string> => {
   const ai = getAIClient();
   const targetLang = language === 'ar' ? 'Arabic' : 'English';
   
-  const systemState = {
-    contactCount: contacts.length,
-    dealCount: deals.length,
-    industry: brand.industry,
-    manualInteractions: "High (Manual Entry Detected)",
-    automationLevel: "Low (Needs Lead Gen Integration)"
-  };
-
   const prompt = `
     CRITICAL: Respond ONLY in ${targetLang}.
-    Act as a Senior CRM Strategist and Market Analyst.
-    ANALYZE THIS CRM SYSTEM STATE: ${JSON.stringify(systemState)}.
-    
-    REPORT REQUIREMENTS:
-    1. MARKET FIT: Does this system meet current ${brand.industry} demands?
-    2. HUMAN REDUNDANCY: Where is the user wasting time on manual tasks?
-    3. STRATEGIC GAPS: What features are missing to reach 100% automation?
-    4. ACTION PLAN: 3 immediate steps to improve ROI.
-    
-    Format: Professional Markdown Report with headers.
+    Perform a deep search for the company "${companyName}". 
+    Find:
+    1. Recent news or press releases.
+    2. Key stakeholders if public.
+    3. Their current strategic focus.
+    Provide a "Cold Call Insight" - something specific to mention to build rapport.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: "gemini-3-pro-preview",
       contents: prompt,
-      config: { thinkingConfig: { thinkingBudget: 500 } }
+      config: { tools: [{ googleSearch: {} }] },
     });
-    return response.text || "Audit failed to generate.";
+    return response.text || "Could not find recent data.";
   } catch (error) {
-    return "Error generating report.";
+    return "Enrichment failed.";
   }
 };
 
+// Added missing performMarketAnalysis function
 /**
- * محرك الوعي الوجداني - يحلل سياق العمل وتفاعل العملاء في الخلفية
+ * تحليل إعلانات المنافسين بناءً على الروابط أو الملفات الشخصية
  */
-export const runBackgroundEmpathySync = async (contacts: any[], chatLogs: any[], brandProfile: any, language: 'en' | 'ar'): Promise<any> => {
+export const performMarketAnalysis = async (competitors: string, language: 'en' | 'ar'): Promise<{ intelligence: string; sources: any[] }> => {
   const ai = getAIClient();
   const targetLang = language === 'ar' ? 'Arabic' : 'English';
-  
-  const context = {
-    userStyle: brandProfile.description,
-    recentHistory: chatLogs.slice(-10),
-    contactNames: contacts.map(c => c.name)
-  };
-
   const prompt = `
-    LANGUAGE REQUIREMENT: You MUST respond in ${targetLang} only.
-    MISSION: CONTEXTUAL AWARENESS ANALYSIS.
-    Analyze the interaction style of the CRM User and these partners: ${context.contactNames.join(', ')}.
-    Based on recent business flow: ${JSON.stringify(context.recentHistory)}.
+    Perform a competitive ad intelligence scan for the following competitors: ${competitors}. 
+    Identify their current marketing strategy, primary messaging tone, and visual style.
+    Use Google Search to find recent campaigns or social media mentions.
+    Respond ONLY in ${targetLang}.
+  `;
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: { tools: [{ googleSearch: {} }] },
+    });
+    return {
+      intelligence: response.text || "No intelligence found.",
+      sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
+    };
+  } catch (error) {
+    return { intelligence: "Intelligence scan failed.", sources: [] };
+  }
+};
 
-    TASK:
-    1. Assess the USER (Owner) focus and stress level (0-100).
-    2. Understand partner personality types (Analytical, Expressive, Amiable, Driver) to improve communication.
-    3. Update their "Satisfaction Status".
-
-    Return ONLY a JSON object:
-    {
-      "userPsychology": { "stressLevel": number, "managementStyle": "string", "advice": "string" },
-      "contactPsychology": [
-        { "name": "string", "personality": "string", "satisfaction": number, "status": "string" }
-      ],
-      "overallHappiness": number
-    }
+// Added missing getAdOptimizationInsights function
+/**
+ * الحصول على رؤى تحسين للإعلانات بناءً على نتائج اختبار A/B
+ */
+export const getAdOptimizationInsights = async (copyA: string, copyB: string, metrics: any, language: 'en' | 'ar'): Promise<string> => {
+  const ai = getAIClient();
+  const targetLang = language === 'ar' ? 'Arabic' : 'English';
+  const prompt = `
+    Act as a growth marketing scientist. Compare these two ad variants:
+    Variant A: ${copyA}
+    Variant B: ${copyB}
+    Performance Metrics: ${JSON.stringify(metrics)}
+    
+    Analyze which variant is likely more effective based on the data and provide one clear strategic insight for optimizing future campaigns.
+    Respond ONLY in ${targetLang}.
   `;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: { 
-        responseMimeType: "application/json",
-        thinkingConfig: { thinkingBudget: 0 }
-      }
+      contents: prompt
     });
-    return JSON.parse(response.text || '{}');
+    return response.text || "No insights available.";
   } catch (error) {
-    console.error("Context Sync Failed", error);
-    return null;
-  }
-};
-
-export const getStrategicPriorities = async (contacts: any[], deals: any[], language: 'en' | 'ar'): Promise<any[]> => {
-  const ai = getAIClient();
-  const targetLang = language === 'ar' ? 'Arabic' : 'English';
-  const summary = { contacts: contacts.length, activeDeals: deals.length, pipelineValue: deals.reduce((a,b)=>a+b.value, 0) };
-  
-  const prompt = `
-    LANGUAGE REQUIREMENT: All content MUST be in ${targetLang}.
-    Based on this CRM data: ${JSON.stringify(summary)}. 
-    Generate 3 "Strategic Action Items" for the user today. 
-    Make them clear, encouraging, and professional. 
-    Format: JSON Array of { "task": "string", "impact": "High/Medium", "reason": "string" }.`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: { responseMimeType: "application/json" }
-    });
-    return JSON.parse(response.text || '[]');
-  } catch (error) {
-    return [];
-  }
-};
-
-export const parseGlobalCommand = async (command: string, language: 'en' | 'ar'): Promise<any> => {
-  const ai = getAIClient();
-  const targetLang = language === 'ar' ? 'Arabic' : 'English';
-  const prompt = `
-    LANGUAGE REQUIREMENT: Your message field MUST be in ${targetLang}.
-    Analyze this natural language CRM command: "${command}". 
-    Extract action. Even if it's casual like "add my friend sam" -> 'add_contact'.
-    Actions: 'add_contact', 'add_deal', 'search', 'analyze'.
-    Return ONLY JSON: { "action": "...", "data": { ... }, "message": "..." }.`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: { responseMimeType: "application/json" }
-    });
-    return JSON.parse(response.text || '{}');
-  } catch (error) {
-    return { action: 'none', message: "Engine busy." };
+    return "Optimization analysis unavailable.";
   }
 };
 
@@ -193,53 +128,52 @@ export const getSmartInsights = async (contacts: any[], deals: any[], language: 
     totalDeals: deals.length,
     totalValue: deals.reduce((acc, d) => acc + d.value, 0)
   };
-  
-  const prompt = `
-    CRITICAL: You MUST write the entire response in ${targetLang} language.
-    Act as a world-class strategic consultant. Analyze this CRM state: ${JSON.stringify(summary)}. 
-    Provide 3 high-impact strategic growth bullet points.`;
-
+  const prompt = `CRITICAL: You MUST write in ${targetLang}. Act as a strategic consultant. Analyze: ${JSON.stringify(summary)}. 3 high-impact bullet points.`;
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt
-    });
-    return response.text || "Generating insights...";
-  } catch (error) {
-    return "Insights unavailable currently.";
-  }
+    const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
+    return response.text || "";
+  } catch (error) { return ""; }
 };
 
-export const performMarketAnalysis = async (keywords: string, language: 'en' | 'ar'): Promise<{ intelligence: string; sources: any[] }> => {
+export const getStrategicPriorities = async (contacts: any[], deals: any[], language: 'en' | 'ar'): Promise<any[]> => {
   const ai = getAIClient();
   const targetLang = language === 'ar' ? 'Arabic' : 'English';
-  const prompt = `
-    CRITICAL: You MUST provide the final strategic report in ${targetLang} language.
-    MISSION: COMPETITOR AD SPY & BENCHMARKING.
-    TARGETS: "${keywords}".
-    
-    TASK:
-    1. Analyze the advertising messaging (Hooks, Value Props, Tone).
-    2. Identify probable targeting strategies (Demographics, Pain Points).
-    3. Analyze visual elements (Color palettes, Image style, Formats).
-    4. Provide a Gap Discovery: How can we beat their strategy?
-    
-    Use Google Search to find their current ads, landing pages, and social media presence.
-    Format as a structured report with clear sections.`;
-
+  const summary = { contacts: contacts.length, activeDeals: deals.length };
+  const prompt = `LANGUAGE: ${targetLang}. Generate 3 Strategic Action Items. JSON Array: [{ "task": "string", "impact": "High/Medium", "reason": "string" }]. Data: ${JSON.stringify(summary)}`;
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: prompt,
-      config: { tools: [{ googleSearch: {} }] },
-    });
-    return { 
-      intelligence: response.text || "Analysis failed.", 
-      sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || [] 
-    };
-  } catch (error) {
-    return { intelligence: "Error", sources: [] };
-  }
+    const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt, config: { responseMimeType: "application/json" } });
+    return JSON.parse(response.text || '[]');
+  } catch (error) { return []; }
+};
+
+export const generateStrategicAuditReport = async (contacts: any[], deals: any[], brand: any, language: 'en' | 'ar'): Promise<string> => {
+  const ai = getAIClient();
+  const targetLang = language === 'ar' ? 'Arabic' : 'English';
+  const prompt = `CRITICAL: Respond ONLY in ${targetLang}. Strategic CRM Audit for ${brand.industry}. Contacts: ${contacts.length}, Deals: ${deals.length}. Markdown format.`;
+  try {
+    const response = await ai.models.generateContent({ model: 'gemini-3-pro-preview', contents: prompt, config: { thinkingConfig: { thinkingBudget: 500 } } });
+    return response.text || "";
+  } catch (error) { return ""; }
+};
+
+export const runBackgroundEmpathySync = async (contacts: any[], chatLogs: any[], brandProfile: any, language: 'en' | 'ar'): Promise<any> => {
+  const ai = getAIClient();
+  const targetLang = language === 'ar' ? 'Arabic' : 'English';
+  const prompt = `LANGUAGE: ${targetLang}. MISSION: CONTEXTUAL AWARENESS. Update psychology JSON. Data: ${JSON.stringify({ contacts: contacts.map(c=>c.name), logs: chatLogs.slice(-5) })}`;
+  try {
+    const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt, config: { responseMimeType: "application/json" } });
+    return JSON.parse(response.text || '{}');
+  } catch (error) { return null; }
+};
+
+export const parseGlobalCommand = async (command: string, language: 'en' | 'ar'): Promise<any> => {
+  const ai = getAIClient();
+  const targetLang = language === 'ar' ? 'Arabic' : 'English';
+  const prompt = `LANGUAGE: ${targetLang}. Parse: "${command}". Return JSON: { "action": "add_contact|add_deal|search", "data": {}, "message": "" }`;
+  try {
+    const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt, config: { responseMimeType: "application/json" } });
+    return JSON.parse(response.text || '{}');
+  } catch (error) { return { action: 'none' }; }
 };
 
 export const decodeBase64 = (base64: string) => {
@@ -259,12 +193,7 @@ export const encodeAudio = (bytes: Uint8Array) => {
   return btoa(binary);
 };
 
-export async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
-): Promise<AudioBuffer> {
+export async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);

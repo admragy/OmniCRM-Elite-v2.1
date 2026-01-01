@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Contact } from '../types';
+import { enrichContactData } from '../services/geminiService';
 
 interface ContactListProps {
   contacts: Contact[];
@@ -12,23 +13,30 @@ const ContactList: React.FC<ContactListProps> = ({ contacts, language, onAddCont
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newContact, setNewContact] = useState({ name: '', company: '', email: '', value: '' });
+  
+  const [enrichingId, setEnrichingId] = useState<string | null>(null);
+  const [enrichmentResult, setEnrichmentResult] = useState<{ id: string, data: string } | null>(null);
 
   const t = {
     en: {
       search: 'Search contacts...', add: 'Add New Record', contact: 'Partner Profile', status: 'Relationship',
       ltv: 'Capital Value', psychology: 'Neural Type', save: 'Finalize Synchronization', modalTitle: 'Integrate New Client',
-      nameLabel: 'Full Name', companyLabel: 'Organization', emailLabel: 'Electronic Mail', valueLabel: 'Projected Value ($)'
+      nameLabel: 'Full Name', companyLabel: 'Organization', emailLabel: 'Electronic Mail', valueLabel: 'Projected Value ($)',
+      enrich: 'Deep Scan Web', enriching: 'Scanning...'
     },
     ar: {
       search: 'البحث في جهات الاتصال...', add: 'إضافة سجل جديد', contact: 'ملف الشريك', status: 'طبيعة العلاقة',
       ltv: 'القيمة الرأسمالية', psychology: 'النمط العصبي', save: 'إتمام المزامنة', modalTitle: 'إدراج عميل جديد',
-      nameLabel: 'الاسم الكامل', companyLabel: 'الشركة / المؤسسة', emailLabel: 'البريد الإلكتروني', valueLabel: 'القيمة التقديرية ($)'
+      nameLabel: 'الاسم الكامل', companyLabel: 'الشركة / المؤسسة', emailLabel: 'البريد الإلكتروني', valueLabel: 'القيمة التقديرية ($)',
+      enrich: 'مسح عميق للويب', enriching: 'جاري المسح...'
     }
   }[language];
 
-  const getPsychBadge = (type?: string) => {
-    const colors: any = { Analytical: 'bg-blue-100 text-blue-600', Expressive: 'bg-amber-100 text-amber-600', Amiable: 'bg-emerald-100 text-emerald-600', Driver: 'bg-rose-100 text-rose-600' };
-    return type ? colors[type] : 'bg-slate-100 text-slate-400';
+  const handleEnrich = async (id: string, company: string) => {
+    setEnrichingId(id);
+    const data = await enrichContactData(company, language);
+    setEnrichmentResult({ id, data });
+    setEnrichingId(null);
   };
 
   const filteredContacts = contacts.filter(c => 
@@ -79,36 +87,59 @@ const ContactList: React.FC<ContactListProps> = ({ contacts, language, onAddCont
                 <th className="px-10 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.contact}</th>
                 <th className="px-10 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.psychology}</th>
                 <th className="px-10 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.status}</th>
-                <th className="px-10 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.ltv}</th>
+                <th className="px-10 py-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
               {filteredContacts.map((contact) => (
-                <tr key={contact.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer group">
-                  <td className="px-10 py-8">
-                    <div className="flex items-center gap-5">
-                      <img src={contact.avatar} className="w-16 h-16 rounded-[1.5rem] shadow-xl border-2 border-white dark:border-slate-700" />
-                      <div>
-                        <p className="text-base font-black text-slate-900 dark:text-white mb-1">{contact.name}</p>
-                        <p className="text-[11px] text-slate-400 font-bold">{contact.company}</p>
+                <React.Fragment key={contact.id}>
+                  <tr className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer group">
+                    <td className="px-10 py-8">
+                      <div className="flex items-center gap-5">
+                        <img src={contact.avatar} className="w-16 h-16 rounded-[1.5rem] shadow-xl border-2 border-white dark:border-slate-700" />
+                        <div>
+                          <p className="text-base font-black text-slate-900 dark:text-white mb-1">{contact.name}</p>
+                          <p className="text-[11px] text-slate-400 font-bold">{contact.company}</p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-10 py-8">
-                    <div className="flex items-center gap-3">
-                       <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${getPsychBadge(contact.psychology?.personalityType)}`}>
-                         {contact.psychology?.personalityType || 'Processing...'}
-                       </span>
-                       <div className="flex gap-1">
-                          {[1,2,3,4,5].map(s => <div key={s} className={`w-1.5 h-3 rounded-full ${s <= (contact.psychology?.sentimentScore || 0)/20 ? 'bg-indigo-500' : 'bg-slate-100 dark:bg-slate-700'}`}></div>)}
-                       </div>
-                    </div>
-                  </td>
-                  <td className="px-10 py-8">
-                    <span className="px-5 py-2 rounded-full text-[10px] font-black uppercase bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700">{contact.status}</span>
-                  </td>
-                  <td className="px-10 py-8 text-lg font-black text-slate-900 dark:text-white tracking-tighter">${contact.value.toLocaleString()}</td>
-                </tr>
+                    </td>
+                    <td className="px-10 py-8">
+                      <div className="flex items-center gap-3">
+                         <span className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                           {contact.psychology?.personalityType || 'Processing...'}
+                         </span>
+                      </div>
+                    </td>
+                    <td className="px-10 py-8">
+                      <span className="px-5 py-2 rounded-full text-[10px] font-black uppercase bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">{contact.status}</span>
+                    </td>
+                    <td className="px-10 py-8">
+                      <button 
+                        onClick={() => handleEnrich(contact.id, contact.company)}
+                        disabled={enrichingId === contact.id}
+                        className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all"
+                        title={t.enrich}
+                      >
+                        {enrichingId === contact.id ? <i className="fa-solid fa-sync animate-spin"></i> : <i className="fa-solid fa-globe"></i>}
+                      </button>
+                    </td>
+                  </tr>
+                  {enrichmentResult?.id === contact.id && (
+                    <tr className="bg-indigo-50/30 dark:bg-indigo-900/10">
+                      <td colSpan={4} className="px-10 py-10">
+                        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-indigo-100 dark:border-indigo-800 shadow-xl animate-in slide-in-from-top-4">
+                           <div className="flex justify-between items-center mb-6">
+                              <h4 className="text-xl font-black text-indigo-600 uppercase tracking-tighter">Strategic Deep Scan: {contact.company}</h4>
+                              <button onClick={() => setEnrichmentResult(null)} className="text-slate-400 hover:text-rose-500"><i className="fa-solid fa-times-circle text-xl"></i></button>
+                           </div>
+                           <div className="prose dark:prose-invert max-w-none text-sm font-bold text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                              {enrichmentResult.data}
+                           </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
@@ -123,7 +154,6 @@ const ContactList: React.FC<ContactListProps> = ({ contacts, language, onAddCont
                 <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tighter">{t.modalTitle}</h2>
                 <p className="text-slate-400 font-bold text-sm uppercase tracking-widest">{language === 'ar' ? 'إضافة سجل جديد لنظامك الاستراتيجي' : 'Integrate a new node into your strategic network'}</p>
              </div>
-             
              <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="space-y-3">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">{t.nameLabel}</label>

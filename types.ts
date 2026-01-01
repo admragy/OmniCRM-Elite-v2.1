@@ -11,7 +11,7 @@ export interface Contact {
   location?: { lat: number; lng: number; city: string };
   psychology?: {
     personalityType: 'Analytical' | 'Expressive' | 'Amiable' | 'Driver';
-    sentimentScore: number; // 0 to 100
+    sentimentScore: number;
     happinessStatus: 'Thrilled' | 'Satisfied' | 'Neutral' | 'Frustrated' | 'At Risk';
     lastTone: string;
   };
@@ -27,21 +27,40 @@ export interface Deal {
   probability: number;
 }
 
-export interface AdCampaign {
+export interface Task {
   id: string;
-  date: string;
-  goal: string;
-  content: string;
-  locations: string;
-  aiCopy: string;
-  performanceNote?: string;
+  dealId?: string;
+  contactId?: string;
+  title: string;
+  priority: 'High' | 'Medium' | 'Low';
+  status: 'Pending' | 'Completed';
+  dueDate: string;
+  aiSuggested?: boolean;
 }
 
-export interface ChatLog {
-  role: 'user' | 'model';
-  text: string;
-  timestamp: string;
+export interface NavigationTab {
+  Dashboard: 'dashboard',
+  Contacts: 'contacts',
+  Deals: 'deals',
+  Tasks: 'tasks',
+  Marketing: 'marketing',
+  Intelligence: 'intelligence',
+  AI_Consultant: 'ai_consultant',
+  Settings: 'settings'
 }
+
+export const NavigationTab = {
+  Dashboard: 'dashboard',
+  Contacts: 'contacts',
+  Deals: 'deals',
+  Tasks: 'tasks',
+  Marketing: 'marketing',
+  Intelligence: 'intelligence',
+  AI_Consultant: 'ai_consultant',
+  Settings: 'settings'
+} as const;
+
+export type NavigationTabType = typeof NavigationTab[keyof typeof NavigationTab];
 
 export interface BrandProfile {
   name: string;
@@ -55,22 +74,23 @@ export interface BrandProfile {
     managementStyle: string;
   };
   aiMemory?: {
-    adHistory: AdCampaign[];
-    chatHistory: ChatLog[];
+    adHistory: any[];
+    chatHistory: any[];
   };
 }
 
-export interface AICommandResult {
-  action: 'add_contact' | 'add_deal' | 'search' | 'analyze' | 'none';
-  data?: any;
-  message: string;
+export interface ChatLog {
+  role: 'user' | 'model';
+  text: string;
+  timestamp: string;
 }
 
-export enum NavigationTab {
-  Dashboard = 'dashboard',
-  Contacts = 'contacts',
-  Deals = 'deals',
-  Marketing = 'marketing',
-  AI_Consultant = 'ai_consultant',
-  Settings = 'settings'
+export interface AdCampaign {
+  id: string;
+  date: string;
+  goal: string;
+  content: string;
+  locations: string;
+  aiCopy: string;
+  performanceNote: string;
 }

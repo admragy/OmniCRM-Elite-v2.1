@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { NavigationTab } from '../types';
+import { NavigationTab, NavigationTabType } from '../types';
 
 interface SidebarProps {
-  activeTab: NavigationTab;
-  setActiveTab: (tab: NavigationTab) => void;
+  activeTab: NavigationTabType;
+  setActiveTab: (tab: NavigationTabType) => void;
   language: 'en' | 'ar';
   onOpenGuide?: () => void;
 }
@@ -15,7 +15,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, language, on
       dashboard: 'Overview',
       contacts: 'Customers',
       deals: 'Pipeline',
+      tasks: 'Execution Matrix',
       marketing: 'Growth Hub',
+      intelligence: 'Market Pulse',
       ai_consultant: 'Live Advisor',
       settings: 'Management',
       plan: 'System Tier',
@@ -28,7 +30,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, language, on
       dashboard: 'نظرة عامة',
       contacts: 'العملاء',
       deals: 'المبيعات',
+      tasks: 'مصفوفة التنفيذ',
       marketing: 'مركز النمو',
+      intelligence: 'نبض السوق',
       ai_consultant: 'المستشار الحي',
       settings: 'الإدارة',
       plan: 'باقة النظام',
@@ -45,6 +49,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, language, on
     { id: NavigationTab.Dashboard, icon: 'fa-chart-network', label: t.dashboard },
     { id: NavigationTab.Contacts, icon: 'fa-address-book', label: t.contacts },
     { id: NavigationTab.Deals, icon: 'fa-file-invoice-dollar', label: t.deals },
+    { id: NavigationTab.Tasks, icon: 'fa-list-check', label: t.tasks },
+    { id: NavigationTab.Intelligence, icon: 'fa-globe', label: t.intelligence },
     { id: NavigationTab.Marketing, icon: 'fa-megaphone', label: t.marketing },
     { id: NavigationTab.AI_Consultant, icon: 'fa-wand-magic-sparkles', label: t.ai_consultant },
     { id: NavigationTab.Settings, icon: 'fa-user-gear', label: t.settings },
