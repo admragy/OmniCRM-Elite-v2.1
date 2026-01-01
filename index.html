@@ -4,35 +4,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OmniCRM Ultimate</title>
+    <title>OmniCRM Ultimate | Quantum OS</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700;900&display=swap');
+        
+        :root {
+            --quantum-glow: rgba(99, 102, 241, 0.15);
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', 'Noto Sans Arabic', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow: hidden;
             -webkit-tap-highlight-color: transparent;
         }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
+
+        /* Aurora Background Effect */
+        .aurora-bg {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 10% 20%, #1e1b4b 0%, transparent 40%),
+                        radial-gradient(circle at 90% 80%, #1e293b 0%, transparent 40%),
+                        radial-gradient(circle at 50% 50%, #020617 0%, #020617 100%);
+            filter: blur(80px);
+            opacity: 0.8;
+            animation: aurora-pulse 15s infinite alternate;
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
+
+        @keyframes aurora-pulse {
+            from { opacity: 0.6; transform: scale(1); }
+            to { opacity: 0.9; transform: scale(1.1); }
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
+
+        .quantum-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(24px);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        /* Mobile optimization */
-        @media (max-width: 640px) {
-            .mobile-safe-bottom {
-                padding-bottom: env(safe-area-inset-bottom);
-            }
+
+        .quantum-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-8px) scale(1.01);
+            box-shadow: 0 0 50px rgba(99, 102, 241, 0.15);
         }
+
+        .shimmer-text {
+            background: linear-gradient(90deg, #94a3b8, #f8fafc, #94a3b8);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 5s linear infinite;
+        }
+
+        @keyframes shimmer {
+            to { background-position: 200% center; }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 20px; }
+        
+        .mobile-safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 <script type="importmap">
 {
@@ -48,13 +90,7 @@
 </script>
 </head>
 <body class="mobile-safe-bottom">
+    <div class="aurora-bg"></div>
     <div id="root"></div>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
-        });
-      }
-    </script>
 </body>
 </html>

@@ -4,149 +4,187 @@ import { BrandProfile } from '../types';
 
 interface AccountSettingsProps {
   language: 'en' | 'ar';
-  isDarkMode?: boolean;
-  toggleDarkMode?: () => void;
   brand: BrandProfile;
   setBrand: (brand: BrandProfile) => void;
 }
 
-const AccountSettings: React.FC<AccountSettingsProps> = ({ language, isDarkMode = false, toggleDarkMode, brand, setBrand }) => {
-  const [isSyncing, setIsSyncing] = useState(false);
+const AccountSettings: React.FC<AccountSettingsProps> = ({ language, brand, setBrand }) => {
   const [isSaving, setIsSaving] = useState(false);
-  const [lastCommit, setLastCommit] = useState(new Date().toISOString().split('T')[0]);
+  const [adminKey, setAdminKey] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const t = {
     en: {
-      title: 'Executive Settings',
-      profile: 'Personal Profile',
-      brandSection: 'Brand Identity (AI Context)',
+      title: 'Management Hub',
+      brandSection: 'Brand Identity',
+      tokens: 'Quantum Energy Control',
+      recharge: 'Add 500 Units',
+      reset: 'Zero Balance',
+      adminLabel: 'Admin Master Key',
+      save: 'Synchronize System',
       brandName: 'Business Name',
-      website: 'Website URL',
-      industry: 'Industry',
-      desc: 'Company Description',
-      target: 'Target Audience',
-      save: 'Synchronize Changes',
-      githubTitle: 'GitHub Neural Sync',
-      githubDesc: 'Manage strategic repository state and autonomous commits.',
-      repoStatus: 'Repository Status',
-      connected: 'Connected & Secure',
-      syncBtn: 'Force Neural Sync',
-      lastSync: 'Last Strategic Commit',
-      saving: 'Updating Context...'
+      saving: 'Applying Changes...',
+      sqlTitle: 'Strategic Database Deployment',
+      sqlDesc: 'Copy and paste this SQL into Supabase SQL Editor to initialize your cloud brain.',
+      copyBtn: 'Copy Migration Script',
+      copied: 'Script Copied!'
     },
     ar: {
-      title: 'الإعدادات التنفيذية',
-      profile: 'الملف الشخصي',
-      brandSection: 'هوية العلامة التجارية (سياق الذكاء الاصطناعي)',
-      brandName: 'اسم النشاط التجاري',
-      website: 'رابط الموقع الإلكتروني',
-      industry: 'مجال العمل',
-      desc: 'وصف الشركة',
-      target: 'الجمهور المستهدف',
-      save: 'مزامنة التغييرات',
-      githubTitle: 'المزامنة العصبية مع GitHub',
-      githubDesc: 'إدارة حالة المستودع الاستراتيجي وعمليات التزام الذاتية.',
-      repoStatus: 'حالة المستودع',
-      connected: 'متصل ومؤمن بالكامل',
-      syncBtn: 'بدء مزامنة فورية',
-      lastSync: 'آخر مزامنة استراتيجية',
-      saving: 'جاري تحديث السياق...'
+      title: 'مركز الإدارة التنفيذي',
+      brandSection: 'هوية العلامة التجارية',
+      tokens: 'التحكم في وحدات الطاقة الاستراتيجية',
+      recharge: 'إضافة ٥٠٠ وحدة',
+      reset: 'تصفير الرصيد',
+      adminLabel: 'مفتاح المسؤول (Master Key)',
+      save: 'مزامنة النظام بالكامل',
+      brandName: 'اسم المشروع',
+      saving: 'جاري تطبيق التعديلات...',
+      sqlTitle: 'نشر قاعدة البيانات الاستراتيجية',
+      sqlDesc: 'انسخ هذا الكود وضعه في SQL Editor داخل Supabase لتفعيل عقلك السحابي.',
+      copyBtn: 'نسخ كود التهيئة (SQL)',
+      copied: 'تم النسخ بنجاح!'
     }
   }[language];
 
-  const handleGitHubSync = async () => {
-    setIsSyncing(true);
-    await new Promise(r => setTimeout(r, 3000));
-    setLastCommit(new Date().toISOString().split('T')[0]);
-    setIsSyncing(false);
+  const sqlMigration = `-- OMNI CRM STRATEGIC INITIALIZATION
+CREATE TABLE IF NOT EXISTS contacts (
+  id TEXT PRIMARY KEY,
+  name TEXT,
+  email TEXT,
+  company TEXT,
+  status TEXT,
+  last_interaction TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  value NUMERIC DEFAULT 0,
+  avatar TEXT,
+  psychology JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS deals (
+  id TEXT PRIMARY KEY,
+  title TEXT,
+  contact_id TEXT REFERENCES contacts(id),
+  value NUMERIC DEFAULT 0,
+  stage TEXT,
+  expected_close TEXT,
+  probability NUMERIC,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id TEXT PRIMARY KEY,
+  deal_id TEXT REFERENCES deals(id),
+  contact_id TEXT REFERENCES contacts(id),
+  title TEXT,
+  priority TEXT,
+  status TEXT,
+  due_date TEXT,
+  ai_suggested BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS brand_profile (
+  id SERIAL PRIMARY KEY,
+  name TEXT,
+  industry TEXT,
+  description TEXT,
+  tokens INTEGER DEFAULT 1000,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);`;
+
+  const handleCopySql = () => {
+    navigator.clipboard.writeText(sqlMigration);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleAddTokens = () => {
+    if (adminKey !== 'OMNI-ELITE-2025') {
+       alert(language === 'ar' ? 'مفتاح المسؤول غير صحيح!' : 'Invalid Admin Key!');
+       return;
+    }
+    setBrand({ ...brand, tokens: brand.tokens + 500 });
   };
 
   const handleSave = async () => {
     setIsSaving(true);
-    await setBrand(brand);
     await new Promise(r => setTimeout(r, 1000));
+    setBrand(brand);
     setIsSaving(false);
-    alert(language === 'ar' ? 'تم تحديث هوية العلامة التجارية بنجاح!' : 'Brand identity synchronized successfully!');
+    alert(language === 'ar' ? 'تم تحديث سياق النظام!' : 'System context updated!');
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 pb-32 animate-in slide-in-from-bottom-10 duration-700" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="max-w-6xl mx-auto space-y-12 pb-32 animate-in slide-in-from-bottom-10 duration-700" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       
-      {/* GitHub Sync Section */}
-      <div className="bg-slate-950 rounded-[4rem] p-12 border border-white/10 shadow-3xl relative overflow-hidden group">
-         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px] group-hover:bg-indigo-600/20 transition-all"></div>
-         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
-            <div className="flex-1">
-               <div className="flex items-center gap-4 mb-4">
-                  <i className="fa-brands fa-github text-4xl text-white"></i>
-                  <h3 className="text-2xl font-black text-white tracking-tight">{t.githubTitle}</h3>
-               </div>
-               <p className="text-slate-400 font-bold text-sm max-w-lg mb-8">{t.githubDesc}</p>
-               <div className="flex gap-8">
-                  <div className="space-y-1">
-                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.repoStatus}</p>
-                     <p className="text-emerald-400 font-black text-sm flex items-center gap-2">
-                        <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-                        {t.connected}
-                     </p>
-                  </div>
-                  <div className="space-y-1">
-                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.lastSync}</p>
-                     <p className="text-white font-black text-sm">{lastCommit}</p>
-                  </div>
-               </div>
+      {/* SQL Migration Section */}
+      <div className="bg-slate-900 rounded-[4rem] p-12 border border-white/5 shadow-3xl overflow-hidden relative group">
+         <div className="absolute top-0 right-0 p-10 opacity-10">
+            <i className="fa-solid fa-database text-9xl text-indigo-400"></i>
+         </div>
+         <div className="relative z-10 space-y-8">
+            <div>
+               <h3 className="text-2xl font-black text-white tracking-tight mb-2">{t.sqlTitle}</h3>
+               <p className="text-slate-400 font-bold text-sm max-w-xl">{t.sqlDesc}</p>
+            </div>
+            <div className="bg-black/50 p-6 rounded-3xl border border-white/10 font-mono text-[10px] text-indigo-300 max-h-40 overflow-y-auto custom-scrollbar whitespace-pre">
+               {sqlMigration}
             </div>
             <button 
-              onClick={handleGitHubSync}
-              disabled={isSyncing}
-              className="px-12 py-6 bg-white text-slate-950 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-slate-100 transition-all flex items-center gap-4"
+              onClick={handleCopySql}
+              className={`px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${copied ? 'bg-emerald-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-xl'}`}
             >
-              {isSyncing ? <i className="fa-solid fa-sync animate-spin"></i> : <i className="fa-solid fa-cloud-arrow-up"></i>}
-              {isSyncing ? (language === 'ar' ? 'جاري المزامنة...' : 'Syncing...') : t.syncBtn}
+              {copied ? t.copied : t.copyBtn}
             </button>
          </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-[4rem] border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden relative">
-        <div className="p-10 md:p-16 space-y-16">
-          <div className="space-y-8">
-            <div className="flex items-center gap-4 border-b border-slate-50 dark:border-slate-800 pb-4">
-              <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400"><i className="fa-solid fa-fingerprint"></i></div>
-              <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{t.brandSection}</h3>
+      {/* Admin Token Panel */}
+      <div className="bg-indigo-950/40 rounded-[4rem] p-12 border border-indigo-500/20 shadow-3xl relative overflow-hidden group">
+         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
+            <div className="flex-1">
+               <h3 className="text-2xl font-black text-white tracking-tight mb-4">{t.tokens}</h3>
+               <div className="flex items-center gap-4 mb-8">
+                  <input 
+                    type="password" 
+                    placeholder={t.adminLabel} 
+                    className="bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-xs font-mono w-64"
+                    value={adminKey}
+                    onChange={e => setAdminKey(e.target.value)}
+                  />
+                  <div className="px-6 py-3 bg-white/5 rounded-xl border border-white/10">
+                    <span className="text-indigo-400 font-black font-mono">{brand.tokens} Units</span>
+                  </div>
+               </div>
+               <div className="flex gap-4">
+                  <button onClick={handleAddTokens} className="px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-500 transition-all">
+                    {t.recharge}
+                  </button>
+               </div>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <i className="fa-solid fa-bolt-lightning text-[120px] text-indigo-500/10 absolute -right-4 -bottom-4"></i>
+         </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 rounded-[4.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+        <div className="p-12 md:p-16 space-y-16">
+          <div className="space-y-8">
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight border-b border-slate-100 dark:border-slate-800 pb-6">{t.brandSection}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                <div className="space-y-3">
-                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.brandName}</label>
-                 <input className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-2xl outline-none focus:border-indigo-500 transition-all font-bold dark:text-white" value={brand.name} onChange={e => setBrand({...brand, name: e.target.value})} />
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">{t.brandName}</label>
+                 <input className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 rounded-[2rem] outline-none font-bold dark:text-white" value={brand.name} onChange={e => setBrand({...brand, name: e.target.value})} />
                </div>
                <div className="space-y-3">
-                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.website}</label>
-                 <input className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-2xl outline-none focus:border-indigo-500 transition-all font-bold dark:text-white" value={brand.website} onChange={e => setBrand({...brand, website: e.target.value})} />
-               </div>
-               <div className="space-y-3">
-                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.industry}</label>
-                 <input className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-2xl outline-none focus:border-indigo-500 transition-all font-bold dark:text-white" value={brand.industry} onChange={e => setBrand({...brand, industry: e.target.value})} />
-               </div>
-               <div className="space-y-3">
-                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.target}</label>
-                 <input className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-2xl outline-none focus:border-indigo-500 transition-all font-bold dark:text-white" value={brand.targetAudience} onChange={e => setBrand({...brand, targetAudience: e.target.value})} />
-               </div>
-               <div className="md:col-span-2 space-y-3">
-                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.desc}</label>
-                 <textarea className="w-full h-32 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-2xl outline-none focus:border-indigo-500 transition-all font-bold dark:text-white resize-none" value={brand.description} onChange={e => setBrand({...brand, description: e.target.value})} />
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Industry</label>
+                 <input className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 rounded-[2rem] outline-none font-bold dark:text-white" value={brand.industry} onChange={e => setBrand({...brand, industry: e.target.value})} />
                </div>
             </div>
           </div>
         </div>
 
-        <div className="px-10 md:px-16 py-10 bg-slate-50/80 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-100 dark:border-slate-800 flex justify-end">
-          <button 
-            onClick={handleSave}
-            disabled={isSaving}
-            className="px-16 py-5 bg-indigo-600 text-white rounded-[2.5rem] font-black text-sm shadow-3xl hover:bg-indigo-700 transition-all flex items-center gap-3"
-          >
-            {isSaving ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-cloud-check"></i>}
+        <div className="px-16 py-10 bg-slate-50/80 dark:bg-slate-900/90 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+          <button onClick={handleSave} disabled={isSaving} className="px-20 py-6 bg-indigo-600 text-white rounded-[2.5rem] font-black text-sm shadow-3xl hover:bg-indigo-700 transition-all">
             {isSaving ? t.saving : t.save}
           </button>
         </div>

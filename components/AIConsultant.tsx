@@ -10,9 +10,10 @@ interface AIConsultantProps {
   language: 'en' | 'ar';
   onMessageLogged?: (log: ChatLog) => void;
   memory?: ChatLog[];
+  deductTokens: (amount: number) => Promise<boolean>;
 }
 
-const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, onMessageLogged, memory = [] }) => {
+const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, onMessageLogged, memory = [], deductTokens }) => {
   const [isActive, setIsActive] = useState(false);
   const [transcriptions, setTranscriptions] = useState<string[]>([]);
   const [status, setStatus] = useState<'idle' | 'connecting' | 'listening' | 'speaking'>('idle');
@@ -103,6 +104,13 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
       }
     };
     draw();
+  };
+
+  const handleStartSession = async () => {
+    const success = await deductTokens(15);
+    if (success) {
+      await startSession();
+    }
   };
 
   const startSession = async () => {
@@ -273,7 +281,7 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
       <div className="flex gap-6 relative z-10">
         {!isActive ? (
           <button 
-            onClick={startSession} 
+            onClick={handleStartSession} 
             className="group relative px-10 py-6 md:px-12 md:py-8 bg-indigo-600 text-white rounded-[2.5rem] font-black text-xl md:text-2xl shadow-3xl hover:bg-indigo-500 hover:scale-105 active:scale-95 transition-all flex items-center gap-4 overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>

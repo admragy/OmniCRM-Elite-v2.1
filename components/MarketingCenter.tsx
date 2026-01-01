@@ -8,9 +8,10 @@ interface MarketingCenterProps {
   language: 'en' | 'ar';
   brand: BrandProfile;
   onCampaignCreated?: (campaign: AdCampaign) => void;
+  deductTokens: (amount: number) => Promise<boolean>;
 }
 
-const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCampaignCreated }) => {
+const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCampaignCreated, deductTokens }) => {
   const [adContent, setAdContent] = useState('');
   const [spyMode, setSpyMode] = useState(false);
   const [competitors, setCompetitors] = useState('');
@@ -170,7 +171,10 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
     if (!adContent) return;
     const keyReady = await checkAndSelectKey();
     if (keyReady) {
-      startGeneration();
+      const success = await deductTokens(10);
+      if (success) {
+        startGeneration();
+      }
     }
   };
 
@@ -214,7 +218,6 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
         contents: { parts: [{ text: `High-end minimalist 4K commercial photographic style for ${brand.industry}, theme: ${adContent}. Deep depth of field, cinematic lighting. Incorporate elements relevant to current ${brand.industry} trends found on the web.` }] },
         config: { 
           imageConfig: { aspectRatio: "16:9", imageSize: "1K" },
-          // Fix: Use correct tool name 'googleSearch' instead of 'google_search' for Gemini API models.
           tools: [{googleSearch: {}}] 
         }
       });

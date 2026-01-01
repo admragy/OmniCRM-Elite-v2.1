@@ -38,23 +38,14 @@ export interface Task {
   aiSuggested?: boolean;
 }
 
-export interface NavigationTab {
-  Dashboard: 'dashboard',
-  Contacts: 'contacts',
-  Deals: 'deals',
-  Tasks: 'tasks',
-  Marketing: 'marketing',
-  Intelligence: 'intelligence',
-  AI_Consultant: 'ai_consultant',
-  Settings: 'settings'
-}
-
 export const NavigationTab = {
   Dashboard: 'dashboard',
   Contacts: 'contacts',
   Deals: 'deals',
   Tasks: 'tasks',
   Marketing: 'marketing',
+  MediaLab: 'media_lab',
+  EdgeAI: 'edge_ai',
   Intelligence: 'intelligence',
   AI_Consultant: 'ai_consultant',
   Settings: 'settings'
@@ -68,6 +59,7 @@ export interface BrandProfile {
   industry: string;
   description: string;
   targetAudience: string;
+  tokens: number; // الرصيد المتاح للذكاء الاصطناعي
   userPsychology?: {
     stressLevel: number;
     focusArea: string;

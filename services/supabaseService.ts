@@ -24,17 +24,25 @@ export const supabase = isSupabaseConfigured
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
   : null;
 
+// بيانات افتراضية (Demo Data) لتشغيل النظام في حال عدم الاتصال
+const DEMO_CONTACTS: Contact[] = [
+  { id: 'demo-1', name: 'Elite Partner X', company: 'Global Tech Corp', email: 'ceo@global.tech', status: 'Customer', lastInteraction: new Date().toISOString(), value: 50000, avatar: 'https://ui-avatars.com/api/?name=Partner+X', psychology: { personalityType: 'Driver', sentimentScore: 90, happinessStatus: 'Thrilled', lastTone: 'Optimistic' } }
+];
+
 export const getContacts = async (): Promise<Contact[]> => {
-  if (!supabase) return [];
+  if (!supabase) return DEMO_CONTACTS;
   try {
     const { data, error } = await supabase.from('contacts').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    return data || [];
-  } catch (err) { return []; }
+    return data && data.length > 0 ? data : DEMO_CONTACTS;
+  } catch (err) { return DEMO_CONTACTS; }
 };
 
 export const saveContact = async (contact: Partial<Contact>) => {
-  if (!supabase) return null;
+  if (!supabase) {
+    console.warn("Supabase not connected. Saving to local session only.");
+    return contact;
+  };
   try {
     const { data, error } = await supabase.from('contacts').upsert(contact).select();
     if (error) throw error;

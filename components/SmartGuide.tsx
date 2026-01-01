@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 
 interface SmartGuideProps {
   isOpen: boolean;
@@ -8,106 +8,196 @@ interface SmartGuideProps {
 }
 
 const SmartGuide: React.FC<SmartGuideProps> = ({ isOpen, onClose, language }) => {
+  const [activePillar, setActivePillar] = useState<number>(0);
+
   if (!isOpen) return null;
 
-  const t = {
+  const content = {
     en: {
-      title: 'Neural Operating Guide',
-      subtitle: 'Master OmniCRM Ultimate in 60 seconds.',
-      close: 'Got it, let’s scale!',
-      steps: [
+      title: 'Omni Masterclass',
+      subtitle: 'Your Blueprint for Market Dominance.',
+      close: 'Launch System Operations',
+      pillars: [
         {
-          title: '1. Dashboard (The Brain)',
-          desc: 'This is your radar. It shows your money, client happiness, and what you need to do RIGHT NOW.',
-          icon: 'fa-chart-network'
+          id: 0,
+          label: 'Core CRM',
+          icon: 'fa-microchip-ai',
+          steps: [
+            { title: 'The Dashboard Radar', desc: 'Monitor your Revenue Velocity and Satisfaction Index in real-time.', icon: 'fa-chart-network' },
+            { title: 'Customer Psychology', desc: 'AI analyzes every interaction to predict personality types (Analytical, Driver, etc.).', icon: 'fa-brain-circuit' },
+            { title: 'Pipeline Mastery', desc: 'Drag deals through stages. AI calculates probability based on historical momentum.', icon: 'fa-file-invoice-dollar' }
+          ]
         },
         {
-          title: '2. Customers (The Heart)',
-          desc: 'Store all your client info here. The AI will automatically tell you if they are happy or angry.',
-          icon: 'fa-address-book'
+          id: 1,
+          label: 'AI Production',
+          icon: 'fa-wand-magic-sparkles',
+          steps: [
+            { title: 'Media Lab (VEO 3.1)', desc: 'Generate 4K cinematic marketing videos by simply describing your vision.', icon: 'fa-film' },
+            { title: 'Campaign Architect', desc: 'Engineer high-converting ads for Facebook & WhatsApp with generated visuals.', icon: 'fa-megaphone' },
+            { title: 'Competitor Spying', desc: 'Use Deep Web Scanning to reverse-engineer competitor strategies.', icon: 'fa-user-secret' }
+          ]
         },
         {
-          title: '3. Pipeline (The Flow)',
-          desc: 'Drag and drop your sales stages. It helps you see which deal is about to bring in the cash.',
-          icon: 'fa-file-invoice-dollar'
+          id: 2,
+          label: 'Privacy & Edge',
+          icon: 'fa-shield-halved',
+          steps: [
+            { title: 'Edge Intelligence', desc: 'Process sensitive contracts locally on your device. Data never leaves your hardware.', icon: 'fa-fingerprint' },
+            { title: 'Hybrid Sync', desc: 'Data is encrypted and synced to your private Supabase cloud instantly.', icon: 'fa-cloud-lock' }
+          ]
         },
         {
-          title: '4. Growth Hub (The Engine)',
-          desc: 'Create ads and lead forms in one click. Let the AI find new customers while you sleep.',
-          icon: 'fa-megaphone'
-        },
-        {
-          title: '5. Live Advisor (The Partner)',
-          desc: 'Talk to the AI. Ask "How do I grow my business?" and listen to the strategic answer.',
-          icon: 'fa-wand-magic-sparkles'
+          id: 3,
+          label: 'Pro Strategy',
+          icon: 'fa-chess-knight',
+          steps: [
+            { title: 'Live Voice Oracle', desc: 'Talk to Gemini 2.5 directly. Ask for growth hacks or business pivots.', icon: 'fa-microphone-lines' },
+            { title: 'Market Pulse', desc: 'Scan global news daily to find untapped industry gaps.', icon: 'fa-globe' }
+          ]
         }
-      ]
+      ],
+      blueprint: {
+        title: 'Success Checklist',
+        items: [
+          'Connect Supabase for Cloud Persistence',
+          'Import your first 5 High-Value Partners',
+          'Run a Competitor Ad Spy scan',
+          'Generate a VEO cinematic brand video'
+        ]
+      }
     },
     ar: {
-      title: 'دليل التشغيل الاستراتيجي',
-      subtitle: 'ازاي تستخدم السيستم وتكبر شغلك في دقيقة واحدة.',
-      close: 'فهمت الدنيا، يلا بينا!',
-      steps: [
+      title: 'دليل احتراف أومني (Masterclass)',
+      subtitle: 'خريطتك للسيطرة على السوق والنمو المتسارع.',
+      close: 'بدء تشغيل العمليات',
+      pillars: [
         {
-          title: '١. لوحة التحكم (الرادار)',
-          desc: 'هنا بتشوف فلوسك، ورضا عملائك، والذكاء الاصطناعي بيقولك تعمل إيه النهاردة بالظبط.',
-          icon: 'fa-chart-network'
+          id: 0,
+          label: 'أساسيات CRM',
+          icon: 'fa-cube',
+          steps: [
+            { title: 'رادار لوحة التحكم', desc: 'راقب سرعة نمو الإيرادات ومؤشر رضا العملاء لحظة بلحظة.', icon: 'fa-chart-network' },
+            { title: 'سيكولوجية العميل', desc: 'الذكاء الاصطناعي يحلل الشخصيات (تحليلي، قيادي، إلخ) تلقائياً.', icon: 'fa-brain-circuit' },
+            { title: 'إدارة الصفقات', desc: 'حرك صفقاتك بسلاسة، وسيقوم النظام بحساب احتمالية النجاح بناءً على الزخم.', icon: 'fa-file-invoice-dollar' }
+          ]
         },
         {
-          title: '٢. العملاء (الكنز)',
-          desc: 'سجل هنا كل زبائنك. السيستم هيعرف لوحده الزبون ده مبسوط ولا زعلان من غير ما تسأله.',
-          icon: 'fa-address-book'
+          id: 1,
+          label: 'الإنتاج الذكي',
+          icon: 'fa-sparkles',
+          steps: [
+            { title: 'مختبر الميديا (VEO)', desc: 'ولد فيديوهات تسويقية 4K سينمائية بمجرد وصف رؤيتك للنظام.', icon: 'fa-film' },
+            { title: 'مهندس الحملات', desc: 'صمم إعلانات فيسبوك وواتساب مع صور مولدة بالذكاء الاصطناعي.', icon: 'fa-megaphone' },
+            { title: 'تجسس المنافسين', desc: 'استخدم المسح العميق للويب لمعرفة استراتيجيات المنافسين السرية.', icon: 'fa-user-secret' }
+          ]
         },
         {
-          title: '٣. المبيعات (المصنع)',
-          desc: 'تابع صفقاتك ووزعها على مراحل. عشان تعرف مين اللي هيدفع ومين اللي محتاج زقة.',
-          icon: 'fa-file-invoice-dollar'
+          id: 2,
+          label: 'الخصوصية والحافة',
+          icon: 'fa-shield-check',
+          steps: [
+            { title: 'المحرك المحلي (Edge)', desc: 'حلل العقود الحساسة محلياً على جهازك. بياناتك لا تغادر معالجك أبداً.', icon: 'fa-fingerprint' },
+            { title: 'المزامنة الهجينة', desc: 'تشفير كامل للبيانات ومزامنتها مع سحابتك الخاصة في Supabase.', icon: 'fa-cloud-lock' }
+          ]
         },
         {
-          title: '٤. مركز النمو (الماكينة)',
-          desc: 'بضغطة واحدة اعمل إعلانات ونماذج لجمع الزبائن. خلي الذكاء الاصطناعي يشتغل وأنت نايم.',
-          icon: 'fa-megaphone'
-        },
-        {
-          title: '٥. المستشار الحي (الشريك)',
-          desc: 'افتح المايك واتكلم مع السيستم. اسأله "أعمل إيه عشان أكسب أكتر؟" وهيرد عليك بالصوت.',
-          icon: 'fa-wand-magic-sparkles'
+          id: 3,
+          label: 'الاستراتيجية العليا',
+          icon: 'fa-crown',
+          steps: [
+            { title: 'المستشار الصوتي الحي', desc: 'تحدث مع Gemini 2.5 مباشرة. اطلب منه أفكاراً لزيادة أرباحك.', icon: 'fa-microphone-lines' },
+            { title: 'نبض السوق الاستراتيجي', desc: 'امسح الأخبار العالمية يومياً لاكتشاف فجوات السوق غير المستغلة.', icon: 'fa-globe' }
+          ]
         }
-      ]
+      ],
+      blueprint: {
+        title: 'قائمة التحقق للنجاح',
+        items: [
+          'اربط سحابة Supabase لضمان بقاء البيانات',
+          'أضف أول ٥ شركاء استراتيجيين للنظام',
+          'قم بإجراء أول عملية "تجسس" على منافس',
+          'ولد فيديو VEO تعريفي لعلامتك التجارية'
+        ]
+      }
     }
   }[language];
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-500">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-[4rem] p-10 md:p-16 shadow-3xl border border-white/10 relative overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-10 bg-slate-950/95 backdrop-blur-2xl animate-in fade-in duration-500 overflow-y-auto custom-scrollbar">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-6xl rounded-[3rem] md:rounded-[5rem] shadow-4xl border border-white/10 relative overflow-hidden flex flex-col lg:flex-row min-h-[80vh]" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         
-        <div className="relative z-10 mb-12 text-center">
-           <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tighter">{t.title}</h2>
-           <p className="text-slate-400 font-bold text-sm uppercase tracking-widest">{t.subtitle}</p>
+        {/* Left Sidebar: Pillars Selection */}
+        <div className="lg:w-80 bg-slate-50 dark:bg-slate-800/50 p-8 md:p-12 flex flex-col gap-4 border-x border-slate-200 dark:border-slate-800">
+           <div className="mb-10">
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter mb-2">{content.title}</h2>
+              <p className="text-slate-400 font-bold text-xs uppercase tracking-widest leading-relaxed">{content.subtitle}</p>
+           </div>
+           
+           <div className="space-y-3">
+              {content.pillars.map((pillar) => (
+                <button 
+                  key={pillar.id}
+                  onClick={() => setActivePillar(pillar.id)}
+                  className={`w-full flex items-center gap-4 px-6 py-5 rounded-[2rem] transition-all duration-500 group ${
+                    activePillar === pillar.id 
+                    ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-500/30' 
+                    : 'text-slate-500 hover:bg-white dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <i className={`fa-solid ${pillar.icon} text-lg w-8`}></i>
+                  <span className="text-sm font-black uppercase tracking-widest">{pillar.label}</span>
+                </button>
+              ))}
+           </div>
+
+           <div className="mt-auto pt-10 border-t border-slate-200 dark:border-slate-800">
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6">{content.blueprint.title}</h4>
+              <ul className="space-y-4">
+                 {content.blueprint.items.map((item, i) => (
+                   <li key={i} className="flex items-center gap-3">
+                      <div className="w-5 h-5 rounded-full border-2 border-emerald-500/30 flex items-center justify-center">
+                         <i className="fa-solid fa-check text-[8px] text-emerald-500 opacity-50"></i>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{item}</span>
+                   </li>
+                 ))}
+              </ul>
+           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-6 relative z-10 max-h-[50vh] overflow-y-auto custom-scrollbar pr-4">
-           {t.steps.map((step, i) => (
-             <div key={i} className="flex items-start gap-8 p-8 bg-slate-50 dark:bg-slate-800/50 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 hover:scale-[1.01] transition-all">
-                <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center text-indigo-500 text-2xl shadow-xl shrink-0">
-                   <i className={`fa-solid ${step.icon}`}></i>
-                </div>
-                <div>
-                   <h4 className="text-xl font-black text-slate-900 dark:text-white mb-2">{step.title}</h4>
-                   <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">{step.desc}</p>
-                </div>
-             </div>
-           ))}
-        </div>
+        {/* Right Section: Content Rendering */}
+        <div className="flex-1 p-8 md:p-20 overflow-y-auto custom-scrollbar">
+           <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-3 px-6 py-2 bg-indigo-600/10 rounded-full border border-indigo-500/20 mb-10">
+                 <i className={`fa-solid ${content.pillars[activePillar].icon} text-indigo-500`}></i>
+                 <span className="text-indigo-500 text-[10px] font-black uppercase tracking-widest">{content.pillars[activePillar].label} Mastery</span>
+              </div>
 
-        <div className="mt-12 flex justify-center relative z-10">
-           <button 
-             onClick={onClose}
-             className="px-20 py-6 bg-indigo-600 text-white rounded-[2rem] font-black text-xl shadow-3xl hover:bg-indigo-700 active:scale-95 transition-all uppercase tracking-widest"
-           >
-             {t.close}
-           </button>
+              <div className="grid grid-cols-1 gap-12">
+                 {content.pillars[activePillar].steps.map((step, idx) => (
+                   <div key={idx} className="flex items-start gap-10 group animate-in slide-in-from-bottom-10" style={{ animationDelay: `${idx * 150}ms` }}>
+                      <div className="w-20 h-20 md:w-24 md:h-24 bg-slate-100 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center text-3xl text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-700 shadow-xl shrink-0 group-hover:rotate-6">
+                         <i className={`fa-solid ${step.icon}`}></i>
+                      </div>
+                      <div>
+                         <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">{step.title}</h3>
+                         <p className="text-slate-500 dark:text-slate-400 font-medium text-lg leading-relaxed">{step.desc}</p>
+                      </div>
+                   </div>
+                 ))}
+              </div>
+
+              <div className="mt-24 pt-12 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                 <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">{language === 'ar' ? 'أتقن الركيزة وتقدم للأمام' : 'Master this pillar to progress'}</p>
+                 <button 
+                   onClick={onClose}
+                   className="px-12 py-6 bg-slate-900 dark:bg-indigo-600 text-white rounded-[2rem] font-black text-sm shadow-3xl hover:scale-105 active:scale-95 transition-all uppercase tracking-widest"
+                 >
+                   {content.close}
+                 </button>
+              </div>
+           </div>
         </div>
       </div>
     </div>
