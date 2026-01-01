@@ -1,14 +1,25 @@
 
 {
   "name": "omnicrm-ultimate",
-  "version": "1.1.0",
-  "description": "High-performance CRM with Gemini AI and PWA support",
+  "version": "2.1.0",
+  "description": "Premium AI-driven CRM Strategic OS built with Gemini AI & Supabase",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "echo 'Building static site...'",
-    "deploy": "bash deploy.sh",
-    "host": "fly deploy"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
+  "keywords": [
+    "crm",
+    "ai",
+    "gemini",
+    "strategic-os",
+    "react",
+    "pwa"
+  ],
+  "author": "OmniCRM Elite Team",
+  "license": "MIT",
   "dependencies": {},
   "devDependencies": {}
 }

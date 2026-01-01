@@ -38,6 +38,7 @@ const App: React.FC = () => {
   const [isCloudLoading, setIsCloudLoading] = useState(isSupabaseConfigured);
 
   const lastSyncRef = useRef<number>(0);
+  const lastStateHash = useRef<string>("");
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -64,16 +65,29 @@ const App: React.FC = () => {
     fetchInitialData();
   }, []);
 
+  // Neural Sync Loop - Triggered by significant state changes
   useEffect(() => {
     const triggerSilentSync = async () => {
       const now = Date.now();
-      if (now - lastSyncRef.current < 60000 || isCloudLoading) return; 
+      const currentStateHash = JSON.stringify({
+        contactCount: contacts.length,
+        chatCount: brand.aiMemory?.chatHistory?.length || 0,
+        lang: language
+      });
+
+      // Avoid re-syncing if state hasn't changed enough or too soon
+      if (now - lastSyncRef.current < 45000 || isCloudLoading || currentStateHash === lastStateHash.current) return; 
+      
       setIsNeuralSyncing(true);
+      lastStateHash.current = currentStateHash;
+      
       try {
         const intel = await runBackgroundEmpathySync(contacts, brand.aiMemory?.chatHistory || [], brand, language);
         if (intel) {
           let updatedBrand = { ...brand };
-          if (intel.userPsychology) {
+          let changed = false;
+
+          if (intel.userPsychology && intel.userPsychology.stressLevel !== brand.userPsychology?.stressLevel) {
             updatedBrand = {
               ...brand,
               userPsychology: {
@@ -83,19 +97,39 @@ const App: React.FC = () => {
               }
             };
             setBrand(updatedBrand);
-            if (isSupabaseConfigured) await updateBrandProfile(updatedBrand);
+            changed = true;
           }
+
           if (intel.contactPsychology) {
             const updatedContacts = contacts.map(c => {
               const found = intel.contactPsychology.find((p: any) => p.name === c.name);
               if (found) {
-                const uContact = { ...c, psychology: { ...c.psychology!, personalityType: found.personality as any, sentimentScore: found.satisfaction, happinessStatus: found.status as any } };
-                if (isSupabaseConfigured) saveContact(uContact);
+                const uContact = { 
+                  ...c, 
+                  psychology: { 
+                    ...c.psychology!, 
+                    personalityType: found.personality as any, 
+                    sentimentScore: found.satisfaction, 
+                    happinessStatus: found.status as any 
+                  } 
+                };
                 return uContact;
               }
               return c;
             });
+            // Update local state and Supabase silently
             setContacts(updatedContacts);
+            if (isSupabaseConfigured) {
+              for (const uc of updatedContacts) {
+                if (JSON.stringify(uc.psychology) !== JSON.stringify(contacts.find(c => c.id === uc.id)?.psychology)) {
+                  saveContact(uc);
+                }
+              }
+            }
+          }
+          
+          if (changed && isSupabaseConfigured) {
+            await updateBrandProfile(updatedBrand);
           }
         }
       } catch (e) {
@@ -105,8 +139,9 @@ const App: React.FC = () => {
         lastSyncRef.current = now;
       }
     };
+    
     if (!isCloudLoading) triggerSilentSync();
-  }, [brand.aiMemory?.chatHistory, contacts.length, language]);
+  }, [brand.aiMemory?.chatHistory?.length, contacts.length, language]);
 
   useEffect(() => {
     if (darkMode) document.documentElement.classList.add('dark');
@@ -147,6 +182,7 @@ const App: React.FC = () => {
     try {
       const result = await parseGlobalCommand(searchQuery, language);
       console.log("OmniCommand Result:", result);
+      // Optional: process 'add_contact' etc here
     } catch (e) {
       console.error(e);
     } finally {
@@ -174,9 +210,9 @@ const App: React.FC = () => {
               <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter leading-none capitalize">{activeTab.replace('_', ' ')}</h1>
                 {isSupabaseConfigured && !isCloudLoading && (
-                  <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-full">
+                  <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-full shadow-sm">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Cloud Active</span>
+                    <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Cloud Ready</span>
                   </div>
                 )}
               </div>
@@ -187,7 +223,7 @@ const App: React.FC = () => {
             </div>
           </div>
           <form onSubmit={handleGlobalSearch} className="flex-1 max-w-2xl relative w-full group">
-            <input type="text" placeholder={t.searchPlaceholder} className="w-full pl-16 pr-24 py-6 bg-white/40 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-[2rem] text-sm font-black dark:text-white outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-2xl" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <input type="text" placeholder={t.searchPlaceholder} className="w-full pl-16 pr-24 py-6 bg-white/40 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-[2rem] text-sm font-black dark:text-white outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-xl" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             <i className={`fa-solid ${isAIProcessing ? 'fa-spinner-third animate-spin' : 'fa-wand-magic-sparkles'} absolute ${language === 'ar' ? 'right-7' : 'left-7'} top-1/2 -translate-y-1/2 text-indigo-500 text-xl`}></i>
           </form>
           <div className="flex items-center gap-6">
@@ -200,8 +236,8 @@ const App: React.FC = () => {
         </header>
         <div className="p-6 md:p-16 flex-1">
           {isCloudLoading ? (
-            <div className="h-full flex flex-col items-center justify-center space-y-8 animate-pulse">
-               <div className="w-24 h-24 bg-slate-200 dark:bg-slate-800 rounded-[2rem]"></div>
+            <div className="h-full flex flex-col items-center justify-center space-y-8">
+               <div className="w-24 h-24 bg-slate-200 dark:bg-slate-800 rounded-[2.5rem] animate-pulse"></div>
                <p className="font-black text-slate-400 uppercase tracking-[0.5em]">{language === 'ar' ? 'جاري مزامنة السحابة الاستراتيجية...' : 'Establishing Strategic Cloud...'}</p>
             </div>
           ) : (

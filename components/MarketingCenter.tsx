@@ -37,9 +37,10 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
 
   const [fbConnected, setFbConnected] = useState(false);
   const [waConnected, setWaConnected] = useState(false);
-  
-  // New state for platform selection
   const [selectedPlatforms, setSelectedPlatforms] = useState({ fb: false, wa: false });
+
+  // Key Selection UI states
+  const [showKeyModal, setShowKeyModal] = useState(false);
 
   const t = {
     en: {
@@ -69,7 +70,11 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
       optimizing: 'Synthesizing Performance Data...',
       optimizeTitle: 'Strategic Optimization Loop',
       platformSelect: 'Select Deployment Targets',
-      mustConnect: 'Connect accounts in header to enable selection'
+      mustConnect: 'Connect accounts in header to enable selection',
+      keyRequired: 'Premium Model Access Required',
+      keyRequiredDesc: 'To use Gemini 3 Pro high-quality visuals, you must select an API key from a paid GCP project.',
+      selectKeyBtn: 'Select Paid API Key',
+      billingLink: 'View Billing Documentation'
     },
     ar: {
       title: 'مهندس الحملات الاستراتيجية',
@@ -98,11 +103,14 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
       optimizing: 'جاري معالجة بيانات الأداء...',
       optimizeTitle: 'حلقة التحسين الاستراتيجي',
       platformSelect: 'اختر منصات النشر المستهدفة',
-      mustConnect: 'قم بربط الحسابات في الأعلى لتتمكن من الاختيار'
+      mustConnect: 'قم بربط الحسابات في الأعلى لتتمكن من الاختيار',
+      keyRequired: 'مطلوب صلاحية الوصول للنماذج المميزة',
+      keyRequiredDesc: 'لاستخدام Gemini 3 Pro للصور عالية الجودة، يجب اختيار مفتاح API من مشروع GCP مدفوع.',
+      selectKeyBtn: 'اختيار مفتاح API مدفوع',
+      billingLink: 'مشاهدة وثائق الفوترة'
     }
   }[language];
 
-  // Auto-select platform when connected if none selected
   useEffect(() => {
     if (fbConnected && !selectedPlatforms.fb) setSelectedPlatforms(prev => ({ ...prev, fb: true }));
     if (!fbConnected && selectedPlatforms.fb) setSelectedPlatforms(prev => ({ ...prev, fb: false }));
@@ -141,23 +149,32 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
     }
   };
 
-  const generateLeadForm = async () => {
-    setIsGenerating(true);
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const targetLang = language === 'ar' ? 'Arabic' : 'English';
-    try {
-      const res = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        config: { responseMimeType: "application/json" },
-        contents: `Generate a Lead Generation Form for ${brand.industry}. 
-        Return JSON: { "headline": "string", "questions": ["string"], "cta": "string" } in ${targetLang}.`
-      });
-      setLeadForm(JSON.parse(res.text || '{}'));
-    } catch (e) {} finally { setIsGenerating(false); }
+  const checkAndSelectKey = async () => {
+    // @ts-ignore
+    const hasKey = await window.aistudio.hasSelectedApiKey();
+    if (!hasKey) {
+      setShowKeyModal(true);
+      return false;
+    }
+    return true;
+  };
+
+  const handleOpenKeyPicker = async () => {
+    // @ts-ignore
+    await window.aistudio.openSelectKey();
+    setShowKeyModal(false);
+    startGeneration();
   };
 
   const handleGenerate = async () => {
     if (!adContent) return;
+    const keyReady = await checkAndSelectKey();
+    if (keyReady) {
+      startGeneration();
+    }
+  };
+
+  const startGeneration = async () => {
     setIsGenerating(true);
     setLearningMode(true);
     setAdCopyA(null);
@@ -174,10 +191,10 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
         model: 'gemini-3-pro-preview',
         config: { responseMimeType: "application/json" },
         contents: `
-          CRITICAL REQUIREMENT: You MUST generate all text content in ${targetLang} language.
-          MISSION: Generate TWO high-performance strategic Ads.
+          CRITICAL: You MUST respond in ${targetLang} only.
+          MISSION: Generate TWO elite strategic Ads for ${brand.industry}.
           PARTNER CONTEXT: ${chatContext}
-          TASK: Create Variant A (Gap Discovery) and Variant B (Brand Authority).
+          TOPIC: ${adContent}
           Output JSON: { "copyA": "...", "copyB": "...", "insights": ["..."] }
         `,
       });
@@ -186,16 +203,20 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
       setAdCopyA(data.copyA);
       setAdCopyB(data.copyB);
       
-      // Generate simulated metrics
       setMetrics({
         A: { ctr: 2.4 + Math.random() * 2, engagement: 75 + Math.random() * 20 },
         B: { ctr: 2.1 + Math.random() * 2, engagement: 70 + Math.random() * 25 }
       });
       
+      // Use Search Tool for high quality images inspired by real trends
       const imgRes = await ai.models.generateContent({
         model: 'gemini-3-pro-image-preview',
-        contents: { parts: [{ text: `Premium strategic commercial visual for ${brand.industry}, minimalist and professional.` }] },
-        config: { imageConfig: { aspectRatio: "16:9", imageSize: "1K" } }
+        contents: { parts: [{ text: `High-end minimalist 4K commercial photographic style for ${brand.industry}, theme: ${adContent}. Deep depth of field, cinematic lighting. Incorporate elements relevant to current ${brand.industry} trends found on the web.` }] },
+        config: { 
+          imageConfig: { aspectRatio: "16:9", imageSize: "1K" },
+          // Fix: Use correct tool name 'googleSearch' instead of 'google_search' for Gemini API models.
+          tools: [{googleSearch: {}}] 
+        }
       });
 
       for (const p of imgRes.candidates?.[0]?.content?.parts || []) {
@@ -204,6 +225,9 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
 
     } catch (err: any) {
       console.error(err);
+      if (err.message?.includes("Requested entity was not found")) {
+        setShowKeyModal(true);
+      }
     } finally {
       setIsGenerating(false);
       setLearningMode(false);
@@ -221,12 +245,7 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
     }
     
     setIsDeploying(true);
-    // Simulate API calls to multiple platforms
-    const activeTasks = [];
-    if (selectedPlatforms.fb) activeTasks.push(new Promise(r => setTimeout(r, 1500)));
-    if (selectedPlatforms.wa) activeTasks.push(new Promise(r => setTimeout(r, 1500)));
-    
-    await Promise.all(activeTasks);
+    await new Promise(r => setTimeout(r, 1500));
     setIsDeploying(false);
     
     if (onCampaignCreated) {
@@ -237,14 +256,12 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
         content: activeVariant === 'A' ? adCopyA! : adCopyB!,
         locations: 'Global',
         aiCopy: activeVariant === 'A' ? adCopyA! : adCopyB!,
-        performanceNote: 'Simulated multi-platform deployment'
+        performanceNote: 'Multi-platform deployment'
       });
     }
     
     alert(t.success);
   };
-
-  const isAnythingSelected = selectedPlatforms.fb || selectedPlatforms.wa;
 
   return (
     <div className="space-y-10 pb-24" dir={language === 'ar' ? 'rtl' : 'ltr'}>
@@ -261,12 +278,41 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
         }
       `}</style>
 
+      {/* API Key Modal */}
+      {showKeyModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-2xl">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[3rem] p-12 text-center shadow-3xl border border-white/10">
+            <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-3xl flex items-center justify-center mx-auto mb-8 text-3xl">
+              <i className="fa-solid fa-key-skeleton"></i>
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter">{t.keyRequired}</h3>
+            <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mb-10 leading-relaxed">{t.keyRequiredDesc}</p>
+            <div className="space-y-4">
+              <button 
+                onClick={handleOpenKeyPicker}
+                className="w-full py-6 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl"
+              >
+                {t.selectKeyBtn}
+              </button>
+              <a 
+                href="https://ai.google.dev/gemini-api/docs/billing" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block text-[10px] font-black text-slate-400 hover:text-indigo-500 uppercase tracking-widest transition-colors"
+              >
+                {t.billingLink}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       <section className="bg-white/80 dark:bg-slate-900/80 p-10 rounded-[4rem] border border-slate-200 dark:border-slate-800 backdrop-blur-3xl shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8">
-        <div className="flex-1">
+        <div className="flex-1 text-center md:text-start">
           <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter mb-2">{t.title}</h2>
           <p className="text-slate-400 font-bold text-sm max-w-xl">{t.desc}</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap justify-center gap-4">
           <button 
             onClick={() => setFbConnected(!fbConnected)}
             className={`px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-3 border shadow-sm ${fbConnected ? 'bg-indigo-600 text-white border-indigo-500 shadow-indigo-200 dark:shadow-indigo-900/40' : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'}`}
@@ -286,7 +332,7 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         <div className="space-y-10">
-          <div className="bg-white dark:bg-slate-900 p-10 rounded-[4rem] border border-slate-200 dark:border-slate-800 shadow-3xl space-y-8 relative overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 p-8 md:p-10 rounded-[3rem] md:rounded-[4rem] border border-slate-200 dark:border-slate-800 shadow-3xl space-y-8 relative overflow-hidden">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.spyLabel}</label>
               <div onClick={() => setSpyMode(!spyMode)} className={`w-14 h-8 rounded-full relative cursor-pointer transition-all ${spyMode ? 'bg-indigo-500' : 'bg-slate-200'}`}>
@@ -335,7 +381,7 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
                           <div className="flex flex-wrap gap-2">
                             {spyResult.sources.map((chunk: any, i: number) => (
                               <a key={i} href={chunk.web?.uri} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-white dark:bg-slate-900 text-[10px] font-black text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 rounded-lg hover:bg-indigo-600 hover:text-white transition-all">
-                                {chunk.web?.title || 'Intelligence Source'}
+                                {chunk.web?.title || 'Source'}
                               </a>
                             ))}
                           </div>
@@ -351,31 +397,16 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
                <textarea value={adContent} onChange={e => setAdContent(e.target.value)} className="w-full h-32 bg-slate-50 dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 outline-none font-bold dark:text-white resize-none shadow-inner" placeholder="Describe the strategic offer..." />
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
                <button onClick={handleGenerate} disabled={isGenerating || !adContent} className="flex-1 py-6 bg-indigo-600 text-white rounded-[2rem] font-black text-sm shadow-xl hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-4">
                  {isGenerating ? <i className="fa-solid fa-sync animate-spin"></i> : <i className="fa-solid fa-sparkles"></i>}
                  {t.generate}
                </button>
-               <button onClick={generateLeadForm} className="px-10 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-[2rem] font-black text-[10px] uppercase tracking-widest border border-slate-200 dark:border-slate-700 shadow-sm transition-all hover:bg-white">
-                 <i className="fa-solid fa-file-invoice mr-2"></i> {t.buildForm}
-               </button>
             </div>
-
-            {leadForm && (
-              <div className="mt-8 p-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-[3rem] border border-indigo-100 dark:border-indigo-800 animate-in zoom-in-95">
-                 <h4 className="text-xl font-black text-indigo-900 dark:text-indigo-200 mb-6">{leadForm.headline}</h4>
-                 <div className="space-y-4">
-                    {leadForm.questions.map((q: string, i: number) => (
-                      <div key={i} className="bg-white dark:bg-slate-900 p-4 rounded-2xl text-xs font-bold text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800">{q}</div>
-                    ))}
-                 </div>
-                 <button className="w-full mt-8 py-5 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest">{leadForm.cta}</button>
-              </div>
-            )}
           </div>
         </div>
 
-        <div className="bg-slate-950 p-12 rounded-[4rem] border border-white/5 shadow-3xl relative overflow-hidden flex flex-col min-h-[900px]">
+        <div className="bg-slate-950 p-8 md:p-12 rounded-[3rem] md:rounded-[4rem] border border-white/5 shadow-3xl relative overflow-hidden flex flex-col min-h-[800px]">
            {learningMode && (
              <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-3xl z-[100] flex flex-col items-center justify-center p-12 text-center">
                 <div className="relative w-48 h-48 mb-10">
@@ -393,11 +424,9 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
                 <div className="flex bg-white/5 p-2 rounded-[2rem] border border-white/10 shrink-0">
                    <button onClick={() => setActiveVariant('A')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all relative ${activeVariant === 'A' ? 'bg-indigo-600 text-white shadow-xl' : 'text-white/40'}`}>
                       VARIANT A
-                      {winner === 'A' && <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[8px] px-2 py-1 rounded-full border border-white/20">WINNER</span>}
                    </button>
                    <button onClick={() => setActiveVariant('B')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all relative ${activeVariant === 'B' ? 'bg-indigo-600 text-white shadow-xl' : 'text-white/40'}`}>
                       VARIANT B
-                      {winner === 'B' && <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[8px] px-2 py-1 rounded-full border border-white/20">WINNER</span>}
                    </button>
                 </div>
 
@@ -472,7 +501,6 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
                    </div>
                 </div>
 
-                {/* Platform Selection UI */}
                 <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/10 space-y-6">
                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.platformSelect}</h4>
                    <div className="grid grid-cols-2 gap-4">
@@ -481,18 +509,14 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
                         onClick={() => setSelectedPlatforms(p => ({ ...p, fb: !p.fb }))}
                         className={`py-4 rounded-2xl border flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest transition-all ${!fbConnected ? 'opacity-30 grayscale' : ''} ${selectedPlatforms.fb ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-white/40'}`}
                       >
-                         <i className="fa-brands fa-facebook"></i>
-                         Facebook
-                         {selectedPlatforms.fb && <i className="fa-solid fa-check-circle ml-1"></i>}
+                         <i className="fa-brands fa-facebook"></i> Facebook
                       </button>
                       <button 
                         disabled={!waConnected}
                         onClick={() => setSelectedPlatforms(p => ({ ...p, wa: !p.wa }))}
                         className={`py-4 rounded-2xl border flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest transition-all ${!waConnected ? 'opacity-30 grayscale' : ''} ${selectedPlatforms.wa ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-white/40'}`}
                       >
-                         <i className="fa-brands fa-whatsapp"></i>
-                         WhatsApp
-                         {selectedPlatforms.wa && <i className="fa-solid fa-check-circle ml-1"></i>}
+                         <i className="fa-brands fa-whatsapp"></i> WhatsApp
                       </button>
                    </div>
                    {(!fbConnected && !waConnected) && (
@@ -502,8 +526,8 @@ const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCa
 
                 <button 
                   onClick={handleDeploy} 
-                  disabled={isDeploying || !winner || !isAnythingSelected}
-                  className={`w-full py-8 rounded-[2.5rem] font-black text-xl flex items-center justify-center gap-4 transition-all shadow-xl ${winner && isAnythingSelected ? 'bg-white text-slate-950 hover:bg-slate-50' : 'bg-slate-800 text-slate-500 opacity-50 cursor-not-allowed'}`}
+                  disabled={isDeploying || !winner || (!selectedPlatforms.fb && !selectedPlatforms.wa)}
+                  className={`w-full py-8 rounded-[2.5rem] font-black text-xl flex items-center justify-center gap-4 transition-all shadow-xl ${winner && (selectedPlatforms.fb || selectedPlatforms.wa) ? 'bg-white text-slate-950 hover:bg-slate-50' : 'bg-slate-800 text-slate-500 opacity-50 cursor-not-allowed'}`}
                 >
                   {isDeploying ? <i className="fa-solid fa-sync animate-spin text-indigo-600"></i> : <i className="fa-solid fa-rocket text-indigo-600"></i>}
                   {isDeploying ? t.deploying : t.launch}

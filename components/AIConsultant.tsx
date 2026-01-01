@@ -22,7 +22,10 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const nextStartTimeRef = useRef(0);
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
-  const sessionRef = useRef<any>(null);
+  const sessionPromiseRef = useRef<Promise<any> | null>(null);
+
+  const currentInputTranscription = useRef('');
+  const currentOutputTranscription = useRef('');
 
   const getCrmContext = () => {
     const totalValue = deals.reduce((sum, d) => sum + d.value, 0);
@@ -45,6 +48,7 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
     if (!ctx) return;
 
     const draw = () => {
+      if (!isActive) return;
       requestAnimationFrame(draw);
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(dataArray);
@@ -52,16 +56,12 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
-      
-      // Calculate overall intensity for the glow effect
       const averageVolume = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-      const intensity = averageVolume / 128; // Normalized intensity
+      const intensity = averageVolume / 128;
       
-      // Dynamic color selection based on status
       const baseColor = status === 'listening' ? '#6366f1' : status === 'speaking' ? '#10b981' : '#334155';
       const glowColor = status === 'listening' ? 'rgba(99, 102, 241, ' : status === 'speaking' ? 'rgba(16, 185, 129, ' : 'rgba(51, 65, 85, ';
 
-      // Draw pulsing outer glow
       if (intensity > 0.1) {
         ctx.beginPath();
         ctx.arc(centerX, centerY, 100 + (intensity * 15), 0, 2 * Math.PI);
@@ -70,7 +70,6 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
         ctx.stroke();
       }
 
-      // Draw the main circle
       ctx.beginPath();
       ctx.arc(centerX, centerY, 100, 0, 2 * Math.PI);
       ctx.strokeStyle = baseColor;
@@ -78,21 +77,14 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
       ctx.shadowBlur = intensity * 25;
       ctx.shadowColor = baseColor;
       ctx.stroke();
-      ctx.shadowBlur = 0; // Reset for other elements
+      ctx.shadowBlur = 0;
 
-      // Draw frequency bars reacting to different ranges
       const barCount = 72;
       for (let i = 0; i < barCount; i++) {
         const angle = (i / barCount) * Math.PI * 2;
-        
-        // Split frequencies: low bins are more reactive to bass/speech, high bins for clarity
-        // Using a non-linear mapping to emphasize the middle-to-high frequencies for visual appeal
         const binIndex = Math.floor((i / barCount) * dataArray.length * 0.8);
         const value = dataArray[binIndex];
-        
-        // Dynamic bar length based on frequency value
-        const barHeight = (value / 255) * 80 * (1 + (i % 2 === 0 ? 0.2 : 0)); 
-        
+        const barHeight = (value / 255) * 80; 
         const innerRadius = 110;
         const outerRadius = innerRadius + barHeight;
         
@@ -104,27 +96,11 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
-        
-        // Color variation for bars: lower frequencies more saturated
         ctx.strokeStyle = baseColor;
         ctx.lineWidth = 3 + (intensity * 2);
         ctx.lineCap = 'round';
-        
-        // Apply glow to bars when intensity is high (speech detected)
-        if (intensity > 0.2) {
-          ctx.shadowBlur = (value / 255) * 15;
-          ctx.shadowColor = baseColor;
-        }
-        
         ctx.stroke();
-        ctx.shadowBlur = 0;
       }
-      
-      // Inner subtle pulsing core
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 85, 0, 2 * Math.PI);
-      ctx.fillStyle = `${glowColor}${0.05 * intensity})`;
-      ctx.fill();
     };
     draw();
   };
@@ -133,6 +109,11 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
     const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
     const inputCtx = new AudioContextClass({ sampleRate: 16000 });
     const outputCtx = new AudioContextClass({ sampleRate: 24000 });
+    
+    // Resume contexts for browser safety
+    if (inputCtx.state === 'suspended') await inputCtx.resume();
+    if (outputCtx.state === 'suspended') await outputCtx.resume();
+    
     audioContextRef.current = outputCtx;
     setStatus('connecting');
 
@@ -142,35 +123,61 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      startVisualizer(stream, inputCtx);
 
       const sessionPromise = ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         callbacks: {
           onopen: () => {
             setStatus('listening');
+            setIsActive(true);
+            startVisualizer(stream, inputCtx);
+            
             const source = inputCtx.createMediaStreamSource(stream);
             const scriptProcessor = inputCtx.createScriptProcessor(4096, 1, 1);
             scriptProcessor.onaudioprocess = (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
               const int16 = new Int16Array(inputData.length);
               for (let i = 0; i < inputData.length; i++) int16[i] = inputData[i] * 32768;
-              sessionPromise.then(s => s.sendRealtimeInput({ media: { data: encodeAudio(new Uint8Array(int16.buffer)), mimeType: 'audio/pcm;rate=16000' } }));
+              sessionPromise.then(s => s.sendRealtimeInput({ 
+                media: { data: encodeAudio(new Uint8Array(int16.buffer)), mimeType: 'audio/pcm;rate=16000' } 
+              }));
             };
             source.connect(scriptProcessor);
             scriptProcessor.connect(inputCtx.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
              if (message.serverContent?.inputTranscription) {
-               const text = message.serverContent.inputTranscription.text;
-               setTranscriptions(prev => [...prev, `${language === 'ar' ? 'أنت' : 'You'}: ${text}`]);
-               if (onMessageLogged) onMessageLogged({ role: 'user', text, timestamp: new Date().toISOString() });
+               currentInputTranscription.current += message.serverContent.inputTranscription.text;
              }
              if (message.serverContent?.outputTranscription) {
-               const text = message.serverContent.outputTranscription.text;
-               setTranscriptions(prev => [...prev, `${language === 'ar' ? 'المستشار' : 'AI'}: ${text}`]);
-               if (onMessageLogged) onMessageLogged({ role: 'model', text, timestamp: new Date().toISOString() });
+               currentOutputTranscription.current += message.serverContent.outputTranscription.text;
              }
+
+             if (message.serverContent?.turnComplete) {
+               const userText = currentInputTranscription.current.trim();
+               const modelText = currentOutputTranscription.current.trim();
+               if (userText) {
+                 setTranscriptions(prev => [...prev, `${language === 'ar' ? 'أنت' : 'You'}: ${userText}`]);
+                 if (onMessageLogged) onMessageLogged({ role: 'user', text: userText, timestamp: new Date().toISOString() });
+               }
+               if (modelText) {
+                 setTranscriptions(prev => [...prev, `${language === 'ar' ? 'المستشار' : 'AI'}: ${modelText}`]);
+                 if (onMessageLogged) onMessageLogged({ role: 'model', text: modelText, timestamp: new Date().toISOString() });
+               }
+               currentInputTranscription.current = '';
+               currentOutputTranscription.current = '';
+             }
+
+             const interrupted = message.serverContent?.interrupted;
+             if (interrupted) {
+               for (const source of sourcesRef.current.values()) {
+                 try { source.stop(); } catch(e) {}
+               }
+               sourcesRef.current.clear();
+               nextStartTimeRef.current = 0;
+               setStatus('listening');
+             }
+
              const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
              if (audioData) {
                setStatus('speaking');
@@ -178,17 +185,22 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
                const source = outputCtx.createBufferSource();
                source.buffer = buffer;
                source.connect(outputCtx.destination);
+               
                const playTime = Math.max(nextStartTimeRef.current, outputCtx.currentTime);
                source.start(playTime);
                nextStartTimeRef.current = playTime + buffer.duration;
                sourcesRef.current.add(source);
+               
                source.onended = () => { 
                  sourcesRef.current.delete(source);
                  if (sourcesRef.current.size === 0) setStatus('listening');
                };
              }
           },
-          onerror: () => stopSession(),
+          onerror: (e) => {
+            console.error("Live session error:", e);
+            stopSession();
+          },
           onclose: () => stopSession()
         },
         config: {
@@ -196,26 +208,27 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
           systemInstruction: `
             CRITICAL: You MUST respond in ${targetLang} language only.
-            You are OmniOracle. 
+            You are OmniOracle, an elite CRM strategic advisor. 
             CONTEXT: ${getCrmContext()}. 
-            PREVIOUS CONVERSATION MEMORY:
-            ${getMemoryContext()}
-            Use what you learned from the memory to provide consistent advice.`,
+            Always maintain a professional, visionary, and proactive tone. Avoid long technical jargon, stay strategic.`,
           inputAudioTranscription: {},
           outputAudioTranscription: {}
         }
       });
-      sessionRef.current = sessionPromise;
-      setIsActive(true);
+      sessionPromiseRef.current = sessionPromise;
     } catch (err) {
-      alert("Error starting session.");
+      console.error("Session activation failed:", err);
       setStatus('idle');
     }
   };
 
   const stopSession = () => {
-    if (sessionRef.current) sessionRef.current.then((s: any) => s.close());
+    if (sessionPromiseRef.current) {
+      sessionPromiseRef.current.then(s => s.close());
+    }
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    sourcesRef.current.forEach(s => { try { s.stop(); } catch(e) {} });
+    sourcesRef.current.clear();
     setIsActive(false);
     setStatus('idle');
   };
@@ -226,12 +239,11 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
   }[language];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[85vh] bg-slate-950 rounded-[4rem] p-16 shadow-3xl border border-white/5 relative overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-      {/* Dynamic Background Aura */}
+    <div className="flex flex-col items-center justify-center min-h-[85vh] bg-slate-950 rounded-[4rem] p-8 md:p-16 shadow-3xl border border-white/5 relative overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] blur-[120px] rounded-full transition-all duration-1000 ${status === 'listening' ? 'bg-indigo-600/20' : status === 'speaking' ? 'bg-emerald-600/20' : 'bg-slate-800/10'}`}></div>
 
       <div className="relative z-10 text-center mb-16">
-        <h2 className="text-4xl font-black text-white mb-6 tracking-tighter">{ui.title}</h2>
+        <h2 className="text-3xl md:text-4xl font-black text-white mb-6 tracking-tighter">{ui.title}</h2>
         <div className="inline-flex items-center gap-3 px-8 py-3 bg-white/5 rounded-full border border-white/10 backdrop-blur-md">
            <span className={`w-3 h-3 rounded-full ${status === 'listening' ? 'bg-indigo-500 animate-ping' : status === 'speaking' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`}></span>
            <span className="text-indigo-200 text-xs font-black uppercase tracking-widest">{ui[status]}</span>
@@ -239,7 +251,7 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
       </div>
 
       <div className="relative group">
-        <canvas ref={canvasRef} width="400" height="400" className="w-[300px] h-[300px] mb-12 relative z-10" />
+        <canvas ref={canvasRef} width="400" height="400" className="w-[260px] h-[260px] md:w-[300px] md:h-[300px] mb-12 relative z-10" />
         {status === 'idle' && (
           <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
              <i className="fa-solid fa-microphone-slash text-6xl text-slate-700 animate-pulse"></i>
@@ -262,27 +274,26 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
         {!isActive ? (
           <button 
             onClick={startSession} 
-            className="group relative px-12 py-8 bg-indigo-600 text-white rounded-[2.5rem] font-black text-2xl shadow-3xl hover:bg-indigo-500 hover:scale-105 active:scale-95 transition-all flex items-center gap-4 overflow-hidden"
+            className="group relative px-10 py-6 md:px-12 md:py-8 bg-indigo-600 text-white rounded-[2.5rem] font-black text-xl md:text-2xl shadow-3xl hover:bg-indigo-500 hover:scale-105 active:scale-95 transition-all flex items-center gap-4 overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-            <i className="fa-solid fa-microphone-lines text-3xl"></i>
+            <i className="fa-solid fa-microphone-lines text-2xl md:text-3xl"></i>
             {ui.start}
           </button>
         ) : (
           <button 
             onClick={stopSession} 
-            className="px-12 py-8 bg-slate-800 text-white rounded-[2.5rem] font-black text-2xl hover:bg-rose-600 transition-all flex items-center gap-4"
+            className="px-10 py-6 md:px-12 md:py-8 bg-slate-800 text-white rounded-[2.5rem] font-black text-xl md:text-2xl hover:bg-rose-600 transition-all flex items-center gap-4"
           >
-            <i className="fa-solid fa-phone-slash text-3xl"></i>
+            <i className="fa-solid fa-phone-slash text-2xl md:text-3xl"></i>
             {ui.stop}
           </button>
         )}
       </div>
 
-      {/* Floating Permission Indicator */}
       <div className="mt-10 flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase tracking-widest">
          <i className="fa-solid fa-shield-check text-emerald-500"></i>
-         {language === 'ar' ? 'الوصول للميكروفون مؤمن' : 'Microphone Access Secured'}
+         {language === 'ar' ? 'الوصول للميكروفون مؤمن ومحمي' : 'Microphone Access Secured & Encrypted'}
       </div>
     </div>
   );

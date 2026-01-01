@@ -41,13 +41,18 @@ const Dashboard: React.FC<DashboardProps> = ({ contacts, deals, language, brand 
 
   const fetchData = async () => {
     setIsLoading(true);
-    const [ins, prio] = await Promise.all([
-      getSmartInsights(contacts, deals, language),
-      getStrategicPriorities(contacts, deals, language)
-    ]);
-    setInsights(ins);
-    setPriorities(prio);
-    setIsLoading(false);
+    try {
+      const [ins, prio] = await Promise.all([
+        getSmartInsights(contacts, deals, language),
+        getStrategicPriorities(contacts, deals, language)
+      ]);
+      setInsights(ins);
+      setPriorities(prio);
+    } catch (e) {
+      console.error("Dashboard fetch error:", e);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const runAudit = async () => {
@@ -66,7 +71,6 @@ const Dashboard: React.FC<DashboardProps> = ({ contacts, deals, language, brand 
     ? Math.round(contacts.reduce((acc, c) => acc + (c.psychology?.sentimentScore || 0), 0) / contacts.length)
     : 85;
 
-  // Chart Data Preparation
   const pipelineData = [
     { name: language === 'ar' ? 'اكتشاف' : 'Discovery', value: deals.filter(d => d.stage === 'Discovery').reduce((a,b)=>a+b.value, 0) },
     { name: language === 'ar' ? 'عرض' : 'Proposal', value: deals.filter(d => d.stage === 'Proposal').reduce((a,b)=>a+b.value, 0) },
@@ -76,33 +80,33 @@ const Dashboard: React.FC<DashboardProps> = ({ contacts, deals, language, brand 
 
   return (
     <div className="space-y-12 animate-in fade-in zoom-in-95 duration-700 pb-20">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
         <KPICard title={t.total} value={`$${(totalRev / 1000).toFixed(1)}k`} change="+12.4%" icon="fa-sack-dollar" color="indigo" />
         <KPICard title={t.active} value={contacts.length.toString()} change="Partners" icon="fa-users-crown" color="emerald" />
         <KPICard title={t.happiness} value={`${avgSatisfaction}%`} change="AI Index" icon="fa-face-smile-hearts" color="rose" />
         <KPICard title={t.efficiency} value="99.9%" change="Active" icon="fa-bolt-lightning" color="sky" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[4rem] p-10 shadow-3xl border border-slate-100 dark:border-slate-800">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[3rem] md:rounded-[4rem] p-8 md:p-10 shadow-3xl border border-slate-100 dark:border-slate-800">
            <div className="flex justify-between items-center mb-10">
-             <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{t.pipelineTitle}</h3>
+             <h3 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{t.pipelineTitle}</h3>
              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-indigo-500 rounded-full"></span>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Flow</span>
+                <span className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.5)]"></span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Neural Live Flow</span>
              </div>
            </div>
-           <div className="h-[300px] w-full">
+           <div className="h-[280px] md:h-[320px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={pipelineData}>
+                <BarChart data={pipelineData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.3} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 900}} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 9, fontWeight: 900}} />
                   <YAxis hide />
                   <Tooltip 
-                    cursor={{fill: '#f1f5f9'}} 
-                    contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'bold'}}
+                    cursor={{fill: '#f1f5f9', opacity: 0.4}} 
+                    contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'bold'}}
                   />
-                  <Bar dataKey="value" radius={[10, 10, 10, 10]} barSize={40}>
+                  <Bar dataKey="value" radius={[8, 8, 8, 8]} barSize={40}>
                     {pipelineData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={['#6366f1', '#818cf8', '#a5b4fc', '#10b981'][index % 4]} />
                     ))}
@@ -112,10 +116,10 @@ const Dashboard: React.FC<DashboardProps> = ({ contacts, deals, language, brand 
            </div>
         </div>
 
-        <div className="bg-slate-950 rounded-[4rem] p-10 shadow-3xl border border-white/5 relative overflow-hidden group">
+        <div className="bg-slate-950 rounded-[3rem] md:rounded-[4rem] p-8 md:p-10 shadow-3xl border border-white/5 relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
-           <h3 className="text-xl font-black text-white tracking-tight mb-8 relative z-10">{t.performanceTitle}</h3>
-           <div className="h-[180px] w-full relative z-10">
+           <h3 className="text-lg md:text-xl font-black text-white tracking-tight mb-8 relative z-10">{t.performanceTitle}</h3>
+           <div className="h-[160px] md:h-[180px] w-full relative z-10">
               <ResponsiveContainer width="100%" height="100%">
                  <AreaChart data={[{v: 20}, {v: 45}, {v: 38}, {v: 70}, {v: 60}, {v: 85}]}>
                     <Area type="monotone" dataKey="v" stroke="#6366f1" strokeWidth={4} fill="url(#colorPv)" />
@@ -140,41 +144,44 @@ const Dashboard: React.FC<DashboardProps> = ({ contacts, deals, language, brand 
         </div>
       </div>
 
-      <section className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[3.5rem] p-1 md:p-1.5 shadow-3xl overflow-hidden group">
-         <div className="bg-white dark:bg-slate-900 rounded-[3.3rem] p-10 h-full">
+      <section className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[3rem] md:rounded-[3.5rem] p-1 md:p-1.5 shadow-3xl overflow-hidden group">
+         <div className="bg-white dark:bg-slate-900 rounded-[2.8rem] md:rounded-[3.3rem] p-8 md:p-10 h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
                <div>
-                  <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter mb-2">{t.compass}</h3>
+                  <h3 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tighter mb-2">{t.compass}</h3>
                   <p className="text-slate-400 font-bold text-sm">{t.compassDesc}</p>
                </div>
                <button 
                 onClick={runAudit}
                 disabled={isAuditing}
-                className="px-8 py-4 bg-slate-900 dark:bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                className="w-full md:w-auto px-8 py-4 bg-slate-900 dark:bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
                >
                  {isAuditing ? <i className="fa-solid fa-sync animate-spin"></i> : <i className="fa-solid fa-chart-magnifying-glass"></i>}
                  {isAuditing ? t.auditing : t.auditBtn}
                </button>
             </div>
 
-            {auditReport ? (
-              <div className="mb-10 p-10 bg-slate-50 dark:bg-slate-800/50 rounded-[2.5rem] border border-indigo-100 dark:border-indigo-900/50 animate-in slide-in-from-top-4">
+            {auditReport && (
+              <div className="mb-10 p-8 md:p-10 bg-slate-50 dark:bg-slate-800/50 rounded-[2.5rem] border border-indigo-100 dark:border-indigo-900/50 animate-in slide-in-from-top-4 overflow-hidden relative">
                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center"><i className="fa-solid fa-clipboard-check"></i></div>
+                    <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg"><i className="fa-solid fa-clipboard-check"></i></div>
                     <h4 className="text-xl font-black text-slate-900 dark:text-white">{t.auditTitle}</h4>
                  </div>
-                 <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 font-medium leading-relaxed whitespace-pre-wrap">
+                 <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 font-medium leading-relaxed whitespace-pre-wrap text-sm md:text-base">
                     {auditReport}
                  </div>
-                 <button onClick={() => setAuditReport(null)} className="mt-8 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-500 transition-colors">{language === 'ar' ? 'إغلاق التقرير' : 'Close Report'}</button>
+                 <button onClick={() => setAuditReport(null)} className="mt-8 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-500 transition-colors flex items-center gap-2">
+                    <i className="fa-solid fa-times-circle"></i>
+                    {language === 'ar' ? 'إغلاق التقرير' : 'Close Report'}
+                 </button>
               </div>
-            ) : null}
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                {priorities.length > 0 ? priorities.map((p, i) => (
-                 <div key={i} className="group/item relative bg-slate-50 dark:bg-slate-800/50 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all hover:scale-[1.02] cursor-pointer">
+                 <div key={i} className="group/item relative bg-slate-50 dark:bg-slate-800/50 p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all hover:shadow-xl cursor-pointer">
                     <div className="flex justify-between items-start mb-6">
-                       <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm text-indigo-500 font-black">0{i+1}</div>
+                       <div className="w-10 h-10 md:w-12 md:h-12 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm text-indigo-500 font-black">0{i+1}</div>
                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${p.impact === 'High' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
                          {p.impact} Impact
                        </span>
@@ -189,15 +196,15 @@ const Dashboard: React.FC<DashboardProps> = ({ contacts, deals, language, brand 
          </div>
       </section>
 
-      <div className="bg-white dark:bg-slate-900 rounded-[3.5rem] p-10 shadow-3xl border border-slate-100 dark:border-slate-800">
-        <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-10">{t.insights}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-           {insights ? insights.split('\n').filter(l => l.trim()).map((line, i) => (
-             <div key={i} className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col gap-4">
-               <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-sm"><i className="fa-solid fa-lightbulb"></i></div>
-               <p className="text-sm font-bold text-slate-700 dark:text-slate-300 leading-relaxed">{line.replace(/^\d+\.\s*/, '')}</p>
+      <div className="bg-white dark:bg-slate-900 rounded-[3rem] md:rounded-[3.5rem] p-8 md:p-10 shadow-3xl border border-slate-100 dark:border-slate-800">
+        <h3 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white mb-10">{t.insights}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+           {insights ? insights.split('\n').filter(l => l.trim() && l.length > 5).map((line, i) => (
+             <div key={i} className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col gap-4 group hover:bg-white dark:hover:bg-slate-800 transition-all">
+               <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-sm shadow-md group-hover:scale-110 transition-transform"><i className="fa-solid fa-lightbulb"></i></div>
+               <p className="text-sm font-bold text-slate-700 dark:text-slate-300 leading-relaxed">{line.replace(/^\d+\.\s*/, '').replace(/^[*\-\s]+/, '')}</p>
              </div>
-           )) : <p className="animate-pulse text-slate-400">{t.loading}</p>}
+           )) : <p className="animate-pulse text-slate-400 text-center col-span-3 py-10">{t.loading}</p>}
         </div>
       </div>
     </div>
@@ -212,13 +219,13 @@ const KPICard = ({ title, value, change, icon, color }: any) => {
     sky: 'bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 border-sky-100/50 dark:border-sky-800/50'
   };
   return (
-    <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-xl transition-all hover:scale-[1.02]">
+    <div className="bg-white dark:bg-slate-900 p-8 md:p-10 rounded-[2.5rem] md:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl">
       <div className="flex justify-between items-start mb-8">
-        <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-3xl shadow-lg border transition-all ${colorMap[color]}`}><i className={`fa-solid ${icon}`}></i></div>
-        <span className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-[10px] font-black rounded-full text-slate-500 dark:text-slate-400 uppercase tracking-widest">{change}</span>
+        <div className={`w-12 h-12 md:w-16 md:h-16 rounded-[1.2rem] md:rounded-[1.5rem] flex items-center justify-center text-2xl md:text-3xl shadow-lg border transition-all ${colorMap[color]}`}><i className={`fa-solid ${icon}`}></i></div>
+        <span className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-50 dark:bg-slate-800 text-[9px] md:text-[10px] font-black rounded-full text-slate-500 dark:text-slate-400 uppercase tracking-widest">{change}</span>
       </div>
-      <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter mb-1">{value}</p>
-      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">{title}</p>
+      <p className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tighter mb-1">{value}</p>
+      <p className="text-[9px] md:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">{title}</p>
     </div>
   );
 };
