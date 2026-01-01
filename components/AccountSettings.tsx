@@ -12,6 +12,7 @@ interface AccountSettingsProps {
 
 const AccountSettings: React.FC<AccountSettingsProps> = ({ language, isDarkMode = false, toggleDarkMode, brand, setBrand }) => {
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [lastCommit, setLastCommit] = useState(new Date().toISOString().split('T')[0]);
 
   const t = {
@@ -30,7 +31,8 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ language, isDarkMode 
       repoStatus: 'Repository Status',
       connected: 'Connected & Secure',
       syncBtn: 'Force Neural Sync',
-      lastSync: 'Last Strategic Commit'
+      lastSync: 'Last Strategic Commit',
+      saving: 'Updating Context...'
     },
     ar: {
       title: 'الإعدادات التنفيذية',
@@ -47,7 +49,8 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ language, isDarkMode 
       repoStatus: 'حالة المستودع',
       connected: 'متصل ومؤمن بالكامل',
       syncBtn: 'بدء مزامنة فورية',
-      lastSync: 'آخر مزامنة استراتيجية'
+      lastSync: 'آخر مزامنة استراتيجية',
+      saving: 'جاري تحديث السياق...'
     }
   }[language];
 
@@ -56,6 +59,14 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ language, isDarkMode 
     await new Promise(r => setTimeout(r, 3000));
     setLastCommit(new Date().toISOString().split('T')[0]);
     setIsSyncing(false);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    await setBrand(brand);
+    await new Promise(r => setTimeout(r, 1000));
+    setIsSaving(false);
+    alert(language === 'ar' ? 'تم تحديث هوية العلامة التجارية بنجاح!' : 'Brand identity synchronized successfully!');
   };
 
   return (
@@ -130,8 +141,13 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ language, isDarkMode 
         </div>
 
         <div className="px-10 md:px-16 py-10 bg-slate-50/80 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-100 dark:border-slate-800 flex justify-end">
-          <button className="px-16 py-5 bg-indigo-600 text-white rounded-[2.5rem] font-black text-sm shadow-3xl hover:bg-indigo-700 transition-all">
-            {t.save}
+          <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-16 py-5 bg-indigo-600 text-white rounded-[2.5rem] font-black text-sm shadow-3xl hover:bg-indigo-700 transition-all flex items-center gap-3"
+          >
+            {isSaving ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-cloud-check"></i>}
+            {isSaving ? t.saving : t.save}
           </button>
         </div>
       </div>

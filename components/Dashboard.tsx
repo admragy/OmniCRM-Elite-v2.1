@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Contact, Deal, BrandProfile } from '../types';
 import { getSmartInsights, getStrategicPriorities, generateStrategicAuditReport } from '../services/geminiService';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, AreaChart, Area } from 'recharts';
 
 interface DashboardProps {
   contacts: Contact[];
@@ -23,14 +24,18 @@ const Dashboard: React.FC<DashboardProps> = ({ contacts, deals, language, brand 
       compass: 'Strategic Compass', compassDesc: 'Your priority action items for today',
       insights: 'Growth Strategy', loading: 'Syncing intelligence...',
       auditBtn: 'Generate Strategic Market Audit', auditing: 'Analyzing System Gaps...',
-      auditTitle: 'System & Market Alignment Report'
+      auditTitle: 'System & Market Alignment Report',
+      pipelineTitle: 'Revenue Pipeline Distribution',
+      performanceTitle: 'Growth Velocity'
     },
     ar: {
       total: 'إجمالي الإيرادات', active: 'الشركاء النشطون', happiness: 'مؤشر الرضا العام', efficiency: 'مزامنة ذكية',
       compass: 'البوصلة الاستراتيجية', compassDesc: 'أهم التحركات المقترحة لك اليوم لزيادة النمو',
       insights: 'رؤى النمو الاستراتيجي', loading: 'جاري مزامنة البيانات...',
       auditBtn: 'توليد تقرير تدقيق السوق الاستراتيجي', auditing: 'جاري تحليل فجوات النظام...',
-      auditTitle: 'تقرير توافق النظام مع متطلبات السوق'
+      auditTitle: 'تقرير توافق النظام مع متطلبات السوق',
+      pipelineTitle: 'توزيع تدفق الإيرادات',
+      performanceTitle: 'سرعة النمو'
     }
   }[language];
 
@@ -61,9 +66,80 @@ const Dashboard: React.FC<DashboardProps> = ({ contacts, deals, language, brand 
     ? Math.round(contacts.reduce((acc, c) => acc + (c.psychology?.sentimentScore || 0), 0) / contacts.length)
     : 85;
 
+  // Chart Data Preparation
+  const pipelineData = [
+    { name: language === 'ar' ? 'اكتشاف' : 'Discovery', value: deals.filter(d => d.stage === 'Discovery').reduce((a,b)=>a+b.value, 0) },
+    { name: language === 'ar' ? 'عرض' : 'Proposal', value: deals.filter(d => d.stage === 'Proposal').reduce((a,b)=>a+b.value, 0) },
+    { name: language === 'ar' ? 'تفاوض' : 'Negotiation', value: deals.filter(d => d.stage === 'Negotiation').reduce((a,b)=>a+b.value, 0) },
+    { name: language === 'ar' ? 'إغلاق' : 'Won', value: deals.filter(d => d.stage === 'Closed Won').reduce((a,b)=>a+b.value, 0) },
+  ];
+
   return (
-    <div className="space-y-12 animate-in fade-in zoom-in-95 duration-700">
-      {/* Strategic Compass */}
+    <div className="space-y-12 animate-in fade-in zoom-in-95 duration-700 pb-20">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <KPICard title={t.total} value={`$${(totalRev / 1000).toFixed(1)}k`} change="+12.4%" icon="fa-sack-dollar" color="indigo" />
+        <KPICard title={t.active} value={contacts.length.toString()} change="Partners" icon="fa-users-crown" color="emerald" />
+        <KPICard title={t.happiness} value={`${avgSatisfaction}%`} change="AI Index" icon="fa-face-smile-hearts" color="rose" />
+        <KPICard title={t.efficiency} value="99.9%" change="Active" icon="fa-bolt-lightning" color="sky" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[4rem] p-10 shadow-3xl border border-slate-100 dark:border-slate-800">
+           <div className="flex justify-between items-center mb-10">
+             <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{t.pipelineTitle}</h3>
+             <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-indigo-500 rounded-full"></span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Flow</span>
+             </div>
+           </div>
+           <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={pipelineData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.3} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 900}} />
+                  <YAxis hide />
+                  <Tooltip 
+                    cursor={{fill: '#f1f5f9'}} 
+                    contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'bold'}}
+                  />
+                  <Bar dataKey="value" radius={[10, 10, 10, 10]} barSize={40}>
+                    {pipelineData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={['#6366f1', '#818cf8', '#a5b4fc', '#10b981'][index % 4]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+           </div>
+        </div>
+
+        <div className="bg-slate-950 rounded-[4rem] p-10 shadow-3xl border border-white/5 relative overflow-hidden group">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
+           <h3 className="text-xl font-black text-white tracking-tight mb-8 relative z-10">{t.performanceTitle}</h3>
+           <div className="h-[180px] w-full relative z-10">
+              <ResponsiveContainer width="100%" height="100%">
+                 <AreaChart data={[{v: 20}, {v: 45}, {v: 38}, {v: 70}, {v: 60}, {v: 85}]}>
+                    <Area type="monotone" dataKey="v" stroke="#6366f1" strokeWidth={4} fill="url(#colorPv)" />
+                    <defs>
+                      <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                 </AreaChart>
+              </ResponsiveContainer>
+           </div>
+           <div className="mt-8 pt-8 border-t border-white/10 flex justify-between items-end relative z-10">
+              <div>
+                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Growth Forecast</p>
+                 <p className="text-2xl font-black text-white">+28.5%</p>
+              </div>
+              <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl">
+                 <i className="fa-solid fa-arrow-trend-up"></i>
+              </div>
+           </div>
+        </div>
+      </div>
+
       <section className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[3.5rem] p-1 md:p-1.5 shadow-3xl overflow-hidden group">
          <div className="bg-white dark:bg-slate-900 rounded-[3.3rem] p-10 h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
@@ -112,13 +188,6 @@ const Dashboard: React.FC<DashboardProps> = ({ contacts, deals, language, brand 
             </div>
          </div>
       </section>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        <KPICard title={t.total} value={`$${(totalRev / 1000).toFixed(1)}k`} change="+12.4%" icon="fa-sack-dollar" color="indigo" />
-        <KPICard title={t.active} value={contacts.length.toString()} change="Partners" icon="fa-users-crown" color="emerald" />
-        <KPICard title={t.happiness} value={`${avgSatisfaction}%`} change="AI Index" icon="fa-face-smile-hearts" color="rose" />
-        <KPICard title={t.efficiency} value="99.9%" change="Active" icon="fa-bolt-lightning" color="sky" />
-      </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-[3.5rem] p-10 shadow-3xl border border-slate-100 dark:border-slate-800">
         <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-10">{t.insights}</h3>
