@@ -16,7 +16,7 @@ const SmartGuide: React.FC<SmartGuideProps> = ({ isOpen, onClose, language }) =>
     en: {
       title: 'Omni Masterclass',
       subtitle: 'Your Blueprint for Market Dominance.',
-      close: 'Launch System Operations',
+      close: 'Launch Strategic Operations',
       pillars: [
         {
           id: 0,
@@ -24,7 +24,7 @@ const SmartGuide: React.FC<SmartGuideProps> = ({ isOpen, onClose, language }) =>
           icon: 'fa-microchip-ai',
           steps: [
             { title: 'The Dashboard Radar', desc: 'Monitor your Revenue Velocity and Satisfaction Index in real-time.', icon: 'fa-chart-network' },
-            { title: 'Customer Psychology', desc: 'AI analyzes every interaction to predict personality types (Analytical, Driver, etc.).', icon: 'fa-brain-circuit' },
+            { title: 'Customer Psychology', desc: 'AI analyzes every interaction to predict personality types and conversion probability.', icon: 'fa-brain-circuit' },
             { title: 'Pipeline Mastery', desc: 'Drag deals through stages. AI calculates probability based on historical momentum.', icon: 'fa-file-invoice-dollar' }
           ]
         },
@@ -33,26 +33,26 @@ const SmartGuide: React.FC<SmartGuideProps> = ({ isOpen, onClose, language }) =>
           label: 'AI Production',
           icon: 'fa-wand-magic-sparkles',
           steps: [
-            { title: 'Media Lab (VEO 3.1)', desc: 'Generate 4K cinematic marketing videos by simply describing your vision.', icon: 'fa-film' },
+            { title: 'Media Lab (VEO 3.1)', desc: 'Generate 4K cinematic marketing assets by simply describing your vision.', icon: 'fa-film' },
             { title: 'Campaign Architect', desc: 'Engineer high-converting ads for Facebook & WhatsApp with generated visuals.', icon: 'fa-megaphone' },
-            { title: 'Competitor Spying', desc: 'Use Deep Web Scanning to reverse-engineer competitor strategies.', icon: 'fa-user-secret' }
+            { title: 'Market Intelligence', desc: 'Use Deep Web Scanning to analyze competitor strategies and market gaps.', icon: 'fa-magnifying-glass-chart' }
           ]
         },
         {
           id: 2,
-          label: 'Privacy & Edge',
+          label: 'Sovereignty & Edge',
           icon: 'fa-shield-halved',
           steps: [
             { title: 'Edge Intelligence', desc: 'Process sensitive contracts locally on your device. Data never leaves your hardware.', icon: 'fa-fingerprint' },
-            { title: 'Hybrid Sync', desc: 'Data is encrypted and synced to your private Supabase cloud instantly.', icon: 'fa-cloud-lock' }
+            { title: 'Unified Sync', desc: 'Data is encrypted and synced to your private sovereign cloud instantly.', icon: 'fa-cloud-lock' }
           ]
         },
         {
           id: 3,
-          label: 'Pro Strategy',
+          label: 'Executive Strategy',
           icon: 'fa-chess-knight',
           steps: [
-            { title: 'Live Voice Oracle', desc: 'Talk to Gemini 2.5 directly. Ask for growth hacks or business pivots.', icon: 'fa-microphone-lines' },
+            { title: 'Live Voice Oracle', desc: 'Talk to Gemini directly. Ask for growth hacks or strategic business pivots.', icon: 'fa-microphone-lines' },
             { title: 'Market Pulse', desc: 'Scan global news daily to find untapped industry gaps.', icon: 'fa-globe' }
           ]
         }
@@ -60,10 +60,10 @@ const SmartGuide: React.FC<SmartGuideProps> = ({ isOpen, onClose, language }) =>
       blueprint: {
         title: 'Success Checklist',
         items: [
-          'Connect Supabase for Cloud Persistence',
-          'Import your first 5 High-Value Partners',
-          'Run a Competitor Ad Spy scan',
-          'Generate a VEO cinematic brand video'
+          'Connect Sovereign Storage (Supabase)',
+          'Calibrate Strategic Intelligence in Settings',
+          'Run a Competitive Market Intelligence scan',
+          'Deploy your first 4K Strategic Asset'
         ]
       }
     },
@@ -78,7 +78,7 @@ const SmartGuide: React.FC<SmartGuideProps> = ({ isOpen, onClose, language }) =>
           icon: 'fa-cube',
           steps: [
             { title: 'رادار لوحة التحكم', desc: 'راقب سرعة نمو الإيرادات ومؤشر رضا العملاء لحظة بلحظة.', icon: 'fa-chart-network' },
-            { title: 'سيكولوجية العميل', desc: 'الذكاء الاصطناعي يحلل الشخصيات (تحليلي، قيادي، إلخ) تلقائياً.', icon: 'fa-brain-circuit' },
+            { title: 'سيكولوجية العميل', desc: 'الذكاء الاصطناعي يحلل الشخصيات ويتوقع احتمالات التحويل تلقائياً.', icon: 'fa-brain-circuit' },
             { title: 'إدارة الصفقات', desc: 'حرك صفقاتك بسلاسة، وسيقوم النظام بحساب احتمالية النجاح بناءً على الزخم.', icon: 'fa-file-invoice-dollar' }
           ]
         },
@@ -87,18 +87,18 @@ const SmartGuide: React.FC<SmartGuideProps> = ({ isOpen, onClose, language }) =>
           label: 'الإنتاج الذكي',
           icon: 'fa-sparkles',
           steps: [
-            { title: 'مختبر الميديا (VEO)', desc: 'ولد فيديوهات تسويقية 4K سينمائية بمجرد وصف رؤيتك للنظام.', icon: 'fa-film' },
+            { title: 'مختبر الميديا (VEO)', desc: 'ولد أصولاً تسويقية 4K سينمائية بمجرد وصف رؤيتك للنظام.', icon: 'fa-film' },
             { title: 'مهندس الحملات', desc: 'صمم إعلانات فيسبوك وواتساب مع صور مولدة بالذكاء الاصطناعي.', icon: 'fa-megaphone' },
-            { title: 'تجسس المنافسين', desc: 'استخدم المسح العميق للويب لمعرفة استراتيجيات المنافسين السرية.', icon: 'fa-user-secret' }
+            { title: 'استخبارات السوق', desc: 'استخدم المسح العميق للويب لتحليل استراتيجيات المنافسين وفجوات السوق.', icon: 'fa-magnifying-glass-chart' }
           ]
         },
         {
           id: 2,
-          label: 'الخصوصية والحافة',
+          label: 'السيادة والمعالجة المحلية',
           icon: 'fa-shield-check',
           steps: [
-            { title: 'المحرك المحلي (Edge)', desc: 'حلل العقود الحساسة محلياً على جهازك. بياناتك لا تغادر معالجك أبداً.', icon: 'fa-fingerprint' },
-            { title: 'المزامنة الهجينة', desc: 'تشفير كامل للبيانات ومزامنتها مع سحابتك الخاصة في Supabase.', icon: 'fa-cloud-lock' }
+            { title: 'المحرك المحلي (Edge)', desc: 'حلل العقود الحساسة محلياً على جهازك لضمان السرية المطلقة.', icon: 'fa-fingerprint' },
+            { title: 'المزامنة الموحدة', desc: 'تشفير كامل للبيانات ومزامنتها مع سحابتك السيادية الخاصة.', icon: 'fa-cloud-lock' }
           ]
         },
         {
@@ -106,7 +106,7 @@ const SmartGuide: React.FC<SmartGuideProps> = ({ isOpen, onClose, language }) =>
           label: 'الاستراتيجية العليا',
           icon: 'fa-crown',
           steps: [
-            { title: 'المستشار الصوتي الحي', desc: 'تحدث مع Gemini 2.5 مباشرة. اطلب منه أفكاراً لزيادة أرباحك.', icon: 'fa-microphone-lines' },
+            { title: 'المستشار الصوتي الحي', desc: 'تحدث مع Gemini مباشرة. اطلب منه أفكاراً لزيادة أرباحك.', icon: 'fa-microphone-lines' },
             { title: 'نبض السوق الاستراتيجي', desc: 'امسح الأخبار العالمية يومياً لاكتشاف فجوات السوق غير المستغلة.', icon: 'fa-globe' }
           ]
         }
@@ -114,10 +114,10 @@ const SmartGuide: React.FC<SmartGuideProps> = ({ isOpen, onClose, language }) =>
       blueprint: {
         title: 'قائمة التحقق للنجاح',
         items: [
-          'اربط سحابة Supabase لضمان بقاء البيانات',
-          'أضف أول ٥ شركاء استراتيجيين للنظام',
-          'قم بإجراء أول عملية "تجسس" على منافس',
-          'ولد فيديو VEO تعريفي لعلامتك التجارية'
+          'ربط التخزين السيادي (Supabase)',
+          'معايرة الذكاء الاستراتيجي في الإعدادات',
+          'إجراء أول عملية تحليل لاستخبارات السوق',
+          'نشر أول أصل استراتيجي بجودة 4K'
         ]
       }
     }

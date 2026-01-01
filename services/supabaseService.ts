@@ -2,31 +2,49 @@
 import { createClient } from '@supabase/supabase-js';
 import { Contact, Deal, BrandProfile, Task } from '../types';
 
-const getEnv = (key: string) => {
+// Safe environment variable fetcher
+const safeGetEnv = (key: string): string => {
   try {
-    return process.env[key] || '';
-  } catch {
+    // Priority: window.process.env -> globalThis.process.env -> fallback
+    const val = (window as any).process?.env?.[key] || (globalThis as any).process?.env?.[key];
+    return typeof val === 'string' ? val : '';
+  } catch (e) {
+    console.warn(`Environment access error for ${key}:`, e);
     return '';
   }
 };
 
-const SUPABASE_URL = getEnv('SUPABASE_URL');
-const SUPABASE_ANON_KEY = getEnv('SUPABASE_ANON_KEY');
+const SUPABASE_URL = safeGetEnv('SUPABASE_URL');
+const SUPABASE_ANON_KEY = safeGetEnv('SUPABASE_ANON_KEY');
 
 export const isSupabaseConfigured = 
-  typeof SUPABASE_URL === 'string' && 
-  SUPABASE_URL.length > 10 && 
-  SUPABASE_URL.startsWith('http') &&
-  typeof SUPABASE_ANON_KEY === 'string' &&
-  SUPABASE_ANON_KEY.length > 10;
+  SUPABASE_URL.startsWith('http') && 
+  SUPABASE_ANON_KEY.length > 20;
 
-export const supabase = isSupabaseConfigured 
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
-  : null;
+// Initialize Supabase client lazily or handle null
+let supabaseInstance: any = null;
+try {
+  if (isSupabaseConfigured) {
+    supabaseInstance = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch (err) {
+  console.error("Failed to initialize Supabase client:", err);
+}
 
-// بيانات افتراضية (Demo Data) لتشغيل النظام في حال عدم الاتصال
+export const supabase = supabaseInstance;
+
 const DEMO_CONTACTS: Contact[] = [
-  { id: 'demo-1', name: 'Elite Partner X', company: 'Global Tech Corp', email: 'ceo@global.tech', status: 'Customer', lastInteraction: new Date().toISOString(), value: 50000, avatar: 'https://ui-avatars.com/api/?name=Partner+X', psychology: { personalityType: 'Driver', sentimentScore: 90, happinessStatus: 'Thrilled', lastTone: 'Optimistic' } }
+  { 
+    id: 'demo-1', 
+    name: 'Strategic Partner Alpha', 
+    company: 'Future Systems Inc', 
+    email: 'alpha@future.ai', 
+    status: 'Customer', 
+    lastInteraction: new Date().toISOString(), 
+    value: 75000, 
+    avatar: 'https://ui-avatars.com/api/?name=Partner+Alpha&background=6366f1&color=fff',
+    psychology: { personalityType: 'Driver', sentimentScore: 95, happinessStatus: 'Thrilled', lastTone: 'Vibrant' } 
+  }
 ];
 
 export const getContacts = async (): Promise<Contact[]> => {
@@ -35,19 +53,10 @@ export const getContacts = async (): Promise<Contact[]> => {
     const { data, error } = await supabase.from('contacts').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return data && data.length > 0 ? data : DEMO_CONTACTS;
-  } catch (err) { return DEMO_CONTACTS; }
-};
-
-export const saveContact = async (contact: Partial<Contact>) => {
-  if (!supabase) {
-    console.warn("Supabase not connected. Saving to local session only.");
-    return contact;
-  };
-  try {
-    const { data, error } = await supabase.from('contacts').upsert(contact).select();
-    if (error) throw error;
-    return data?.[0];
-  } catch (err) { return null; }
+  } catch (err) { 
+    console.error("Supabase error (contacts):", err);
+    return DEMO_CONTACTS; 
+  }
 };
 
 export const getDeals = async (): Promise<Deal[]> => {
@@ -56,16 +65,10 @@ export const getDeals = async (): Promise<Deal[]> => {
     const { data, error } = await supabase.from('deals').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
-  } catch (err) { return []; }
-};
-
-export const saveDeal = async (deal: Partial<Deal>) => {
-  if (!supabase) return null;
-  try {
-    const { data, error } = await supabase.from('deals').upsert(deal).select();
-    if (error) throw error;
-    return data?.[0];
-  } catch (err) { return null; }
+  } catch (err) { 
+    console.error("Supabase error (deals):", err);
+    return []; 
+  }
 };
 
 export const getTasks = async (): Promise<Task[]> => {
@@ -74,7 +77,10 @@ export const getTasks = async (): Promise<Task[]> => {
     const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
-  } catch (err) { return []; }
+  } catch (err) { 
+    console.error("Supabase error (tasks):", err);
+    return []; 
+  }
 };
 
 export const saveTask = async (task: Partial<Task>) => {
@@ -88,15 +94,17 @@ export const saveTask = async (task: Partial<Task>) => {
 
 export const deleteTask = async (id: string) => {
   if (!supabase) return;
-  await supabase.from('tasks').delete().eq('id', id);
+  try {
+    await supabase.from('tasks').delete().eq('id', id);
+  } catch (e) {}
 };
 
 export const getBrandProfile = async (): Promise<BrandProfile | null> => {
   if (!supabase) return null;
   try {
     const { data, error } = await supabase.from('brand_profile').select('*').limit(1).single();
-    if (error && error.code !== 'PGRST116') throw error;
-    return data || null;
+    if (error) return null;
+    return data;
   } catch (err) { return null; }
 };
 

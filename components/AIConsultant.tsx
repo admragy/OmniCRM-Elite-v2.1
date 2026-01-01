@@ -1,20 +1,20 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, Modality, LiveServerMessage } from "@google/genai";
-import { Contact, Deal, ChatLog } from '../types';
+import { Contact, Deal, ChatLog, BrandProfile } from '../types';
 import { decodeBase64, encodeAudio, decodeAudioData } from '../services/geminiService';
 
 interface AIConsultantProps {
   contacts: Contact[];
   deals: Deal[];
   language: 'en' | 'ar';
-  onMessageLogged?: (log: ChatLog) => void;
-  memory?: ChatLog[];
+  brand: BrandProfile;
   deductTokens: (amount: number) => Promise<boolean>;
 }
 
-const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, onMessageLogged, memory = [], deductTokens }) => {
+const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, brand, deductTokens }) => {
   const [isActive, setIsActive] = useState(false);
+  const [mode, setMode] = useState<'Strategic' | 'Tactical' | 'Combat'>('Strategic');
   const [transcriptions, setTranscriptions] = useState<string[]>([]);
   const [status, setStatus] = useState<'idle' | 'connecting' | 'listening' | 'speaking'>('idle');
   
@@ -30,18 +30,13 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
 
   const getCrmContext = () => {
     const totalValue = deals.reduce((sum, d) => sum + d.value, 0);
-    const topClients = contacts.slice(0, 3).map(c => `${c.name} from ${c.company}`).join(', ');
-    return `The current CRM state: Total revenue is $${totalValue}. Top clients: ${topClients}. Total deals: ${deals.length}.`;
-  };
-
-  const getMemoryContext = () => {
-    return memory.slice(-10).map(m => `${m.role}: ${m.text}`).join('\n');
+    return `The current CRM state: Total revenue is $${totalValue}. Industry: ${brand.industry}. Mode: ${mode}.`;
   };
 
   const startVisualizer = (stream: MediaStream, context: AudioContext) => {
     const source = context.createMediaStreamSource(stream);
     const analyser = context.createAnalyser();
-    analyser.fftSize = 256;
+    analyser.fftSize = 512;
     source.connect(analyser);
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -57,48 +52,38 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
-      const averageVolume = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-      const intensity = averageVolume / 128;
       
-      const baseColor = status === 'listening' ? '#6366f1' : status === 'speaking' ? '#10b981' : '#334155';
-      const glowColor = status === 'listening' ? 'rgba(99, 102, 241, ' : status === 'speaking' ? 'rgba(16, 185, 129, ' : 'rgba(51, 65, 85, ';
+      const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+      const intensity = average / 128;
 
-      if (intensity > 0.1) {
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, 100 + (intensity * 15), 0, 2 * Math.PI);
-        ctx.strokeStyle = `${glowColor}${0.2 * intensity})`;
-        ctx.lineWidth = 20 * intensity;
-        ctx.stroke();
-      }
-
+      // Glow logic
+      const color = mode === 'Combat' ? '#f43f5e' : status === 'speaking' ? '#10b981' : '#6366f1';
+      
       ctx.beginPath();
-      ctx.arc(centerX, centerY, 100, 0, 2 * Math.PI);
-      ctx.strokeStyle = baseColor;
-      ctx.lineWidth = 4 + (intensity * 6);
-      ctx.shadowBlur = intensity * 25;
-      ctx.shadowColor = baseColor;
+      ctx.arc(centerX, centerY, 120 + intensity * 20, 0, 2 * Math.PI);
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.2 * intensity;
+      ctx.lineWidth = 30;
       ctx.stroke();
-      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
 
-      const barCount = 72;
+      // Circular bars
+      const barCount = 120;
       for (let i = 0; i < barCount; i++) {
         const angle = (i / barCount) * Math.PI * 2;
-        const binIndex = Math.floor((i / barCount) * dataArray.length * 0.8);
-        const value = dataArray[binIndex];
-        const barHeight = (value / 255) * 80; 
-        const innerRadius = 110;
-        const outerRadius = innerRadius + barHeight;
+        const value = dataArray[i % dataArray.length];
+        const barHeight = (value / 255) * 100 * intensity;
         
-        const x1 = centerX + Math.cos(angle) * innerRadius;
-        const y1 = centerY + Math.sin(angle) * innerRadius;
-        const x2 = centerX + Math.cos(angle) * outerRadius;
-        const y2 = centerY + Math.sin(angle) * outerRadius;
+        const x1 = centerX + Math.cos(angle) * 130;
+        const y1 = centerY + Math.sin(angle) * 130;
+        const x2 = centerX + Math.cos(angle) * (130 + barHeight);
+        const y2 = centerY + Math.sin(angle) * (130 + barHeight);
         
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
-        ctx.strokeStyle = baseColor;
-        ctx.lineWidth = 3 + (intensity * 2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.stroke();
       }
@@ -106,22 +91,12 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
     draw();
   };
 
-  const handleStartSession = async () => {
-    const success = await deductTokens(15);
-    if (success) {
-      await startSession();
-    }
-  };
-
   const startSession = async () => {
-    const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
-    const inputCtx = new AudioContextClass({ sampleRate: 16000 });
-    const outputCtx = new AudioContextClass({ sampleRate: 24000 });
-    
-    // Resume contexts for browser safety
-    if (inputCtx.state === 'suspended') await inputCtx.resume();
-    if (outputCtx.state === 'suspended') await outputCtx.resume();
-    
+    const success = await deductTokens(15);
+    if (!success) return;
+
+    const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+    const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     audioContextRef.current = outputCtx;
     setStatus('connecting');
 
@@ -154,36 +129,17 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
             scriptProcessor.connect(inputCtx.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
-             if (message.serverContent?.inputTranscription) {
-               currentInputTranscription.current += message.serverContent.inputTranscription.text;
-             }
-             if (message.serverContent?.outputTranscription) {
-               currentOutputTranscription.current += message.serverContent.outputTranscription.text;
-             }
+             if (message.serverContent?.inputTranscription) currentInputTranscription.current += message.serverContent.inputTranscription.text;
+             if (message.serverContent?.outputTranscription) currentOutputTranscription.current += message.serverContent.outputTranscription.text;
 
              if (message.serverContent?.turnComplete) {
                const userText = currentInputTranscription.current.trim();
                const modelText = currentOutputTranscription.current.trim();
-               if (userText) {
-                 setTranscriptions(prev => [...prev, `${language === 'ar' ? 'أنت' : 'You'}: ${userText}`]);
-                 if (onMessageLogged) onMessageLogged({ role: 'user', text: userText, timestamp: new Date().toISOString() });
-               }
-               if (modelText) {
-                 setTranscriptions(prev => [...prev, `${language === 'ar' ? 'المستشار' : 'AI'}: ${modelText}`]);
-                 if (onMessageLogged) onMessageLogged({ role: 'model', text: modelText, timestamp: new Date().toISOString() });
-               }
+               if (userText) setTranscriptions(prev => [...prev, `User: ${userText}`]);
+               if (modelText) setTranscriptions(prev => [...prev, `Advisor: ${modelText}`]);
+               // Fix: Correctly update the ref's current value instead of reassigning the constant ref object
                currentInputTranscription.current = '';
                currentOutputTranscription.current = '';
-             }
-
-             const interrupted = message.serverContent?.interrupted;
-             if (interrupted) {
-               for (const source of sourcesRef.current.values()) {
-                 try { source.stop(); } catch(e) {}
-               }
-               sourcesRef.current.clear();
-               nextStartTimeRef.current = 0;
-               setStatus('listening');
              }
 
              const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
@@ -193,115 +149,93 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
                const source = outputCtx.createBufferSource();
                source.buffer = buffer;
                source.connect(outputCtx.destination);
-               
                const playTime = Math.max(nextStartTimeRef.current, outputCtx.currentTime);
                source.start(playTime);
                nextStartTimeRef.current = playTime + buffer.duration;
                sourcesRef.current.add(source);
-               
                source.onended = () => { 
                  sourcesRef.current.delete(source);
                  if (sourcesRef.current.size === 0) setStatus('listening');
                };
              }
           },
-          onerror: (e) => {
-            console.error("Live session error:", e);
-            stopSession();
-          },
+          onerror: () => stopSession(),
           onclose: () => stopSession()
         },
         config: {
           responseModalities: [Modality.AUDIO],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
-          systemInstruction: `
-            CRITICAL: You MUST respond in ${targetLang} language only.
-            You are OmniOracle, an elite CRM strategic advisor. 
-            CONTEXT: ${getCrmContext()}. 
-            Always maintain a professional, visionary, and proactive tone. Avoid long technical jargon, stay strategic.`,
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Charon' } } },
+          systemInstruction: `IDENTITY: OmniAdvisor V3. Current Mode: ${mode}. Language: ${targetLang}. 
+          If Combat Mode: Be aggressive, brief, and focus on capturing market share.
+          If Strategic Mode: Be visionary, long-term oriented, and philosophical.
+          If Tactical Mode: Focus on execution, steps, and CRM data points.
+          Context: ${getCrmContext()}`,
           inputAudioTranscription: {},
           outputAudioTranscription: {}
         }
       });
       sessionPromiseRef.current = sessionPromise;
-    } catch (err) {
-      console.error("Session activation failed:", err);
-      setStatus('idle');
-    }
+    } catch (err) { setStatus('idle'); }
   };
 
   const stopSession = () => {
-    if (sessionPromiseRef.current) {
-      sessionPromiseRef.current.then(s => s.close());
-    }
+    if (sessionPromiseRef.current) sessionPromiseRef.current.then(s => s.close());
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-    sourcesRef.current.forEach(s => { try { s.stop(); } catch(e) {} });
-    sourcesRef.current.clear();
     setIsActive(false);
     setStatus('idle');
   };
 
   const ui = {
-    ar: { title: 'مختبر OmniAI الاستراتيجي', start: 'تفعيل المستشار الصوتي', stop: 'إنهاء الجلسة', idle: 'النظام في وضع الاستعداد', listening: 'جاري الاستماع إليك...', speaking: 'جاري الرد...', connecting: 'جاري الاتصال...' },
-    en: { title: 'OmniAI Strategic Lab', start: 'Activate Voice Oracle', stop: 'Terminate Session', idle: 'System Standby', listening: 'Listening...', speaking: 'Speaking...', connecting: 'Connecting...' }
+    ar: { title: 'مستشار النمو الاستراتيجي', start: 'بدء الجلسة الاستشارية', stop: 'إنهاء الجلسة' },
+    en: { title: 'Strategic Growth Advisor', start: 'Start Advisory Session', stop: 'End Session' }
   }[language];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[85vh] bg-slate-950 rounded-[4rem] p-8 md:p-16 shadow-3xl border border-white/5 relative overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] blur-[120px] rounded-full transition-all duration-1000 ${status === 'listening' ? 'bg-indigo-600/20' : status === 'speaking' ? 'bg-emerald-600/20' : 'bg-slate-800/10'}`}></div>
+    <div className="flex flex-col items-center justify-center min-h-[85vh] bg-slate-950 rounded-[5rem] p-12 border border-white/5 relative overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      
+      {/* Mode Selector */}
+      <div className="absolute top-16 flex gap-4 z-20">
+        {['Strategic', 'Tactical', 'Combat'].map(m => (
+          <button 
+            key={m} 
+            onClick={() => setMode(m as any)}
+            className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${mode === m ? 'bg-white text-slate-950 border-white' : 'text-slate-500 border-white/10 hover:border-white/30'}`}
+          >
+            {m}
+          </button>
+        ))}
+      </div>
 
-      <div className="relative z-10 text-center mb-16">
-        <h2 className="text-3xl md:text-4xl font-black text-white mb-6 tracking-tighter">{ui.title}</h2>
-        <div className="inline-flex items-center gap-3 px-8 py-3 bg-white/5 rounded-full border border-white/10 backdrop-blur-md">
+      <div className="relative z-10 text-center mb-12">
+        <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter shimmer-text mb-6">{ui.title}</h2>
+        <div className="inline-flex items-center gap-4 px-10 py-4 bg-white/5 rounded-full border border-white/10 backdrop-blur-3xl">
            <span className={`w-3 h-3 rounded-full ${status === 'listening' ? 'bg-indigo-500 animate-ping' : status === 'speaking' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`}></span>
-           <span className="text-indigo-200 text-xs font-black uppercase tracking-widest">{ui[status]}</span>
+           <span className="text-white text-xs font-black uppercase tracking-[0.3em]">{status}</span>
         </div>
       </div>
 
-      <div className="relative group">
-        <canvas ref={canvasRef} width="400" height="400" className="w-[260px] h-[260px] md:w-[300px] md:h-[300px] mb-12 relative z-10" />
-        {status === 'idle' && (
-          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-             <i className="fa-solid fa-microphone-slash text-6xl text-slate-700 animate-pulse"></i>
-          </div>
-        )}
-      </div>
+      <canvas ref={canvasRef} width="500" height="500" className="w-[300px] h-[300px] md:w-[400px] md:h-[400px] mb-12 relative z-10" />
 
-      <div className="w-full max-w-4xl h-48 bg-white/5 rounded-[3rem] p-10 border border-white/10 shadow-inner overflow-y-auto mb-16 flex flex-col gap-4 backdrop-blur-sm relative z-10 custom-scrollbar">
-         {transcriptions.length === 0 && <p className="text-slate-600 font-bold italic text-center mt-4">{language === 'ar' ? 'ابدأ التحدث للحصول على استشارة فورية...' : 'Start speaking for instant strategic advice...'}</p>}
+      <div className="w-full max-w-5xl h-64 bg-black/40 rounded-[4rem] p-12 border border-white/5 overflow-y-auto mb-16 flex flex-col gap-6 custom-scrollbar shadow-inner relative z-10">
          {transcriptions.map((t, i) => (
-           <div key={i} className={`flex ${t.includes('AI') || t.includes('المستشار') ? 'justify-start' : 'justify-end'}`}>
-             <div className={`max-w-[80%] p-4 rounded-2xl text-sm font-bold ${t.includes('AI') || t.includes('المستشار') ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20' : 'bg-white/5 text-white border border-white/10'}`}>
+           <div key={i} className={`flex ${t.startsWith('Advisor') ? 'justify-start' : 'justify-end'}`}>
+             <div className={`max-w-[85%] p-6 rounded-[2.5rem] text-sm font-bold ${t.startsWith('Advisor') ? 'bg-indigo-600/10 text-indigo-300 border border-indigo-500/20' : 'bg-white/5 text-white/70 border border-white/10'}`}>
                {t}
              </div>
            </div>
          ))}
       </div>
 
-      <div className="flex gap-6 relative z-10">
+      <div className="flex gap-8 relative z-10">
         {!isActive ? (
-          <button 
-            onClick={handleStartSession} 
-            className="group relative px-10 py-6 md:px-12 md:py-8 bg-indigo-600 text-white rounded-[2.5rem] font-black text-xl md:text-2xl shadow-3xl hover:bg-indigo-500 hover:scale-105 active:scale-95 transition-all flex items-center gap-4 overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-            <i className="fa-solid fa-microphone-lines text-2xl md:text-3xl"></i>
-            {ui.start}
+          <button onClick={startSession} className="px-16 py-8 bg-indigo-600 text-white rounded-[3rem] font-black text-2xl shadow-[0_20px_60px_rgba(99,102,241,0.4)] hover:bg-indigo-500 transition-all flex items-center gap-6 group">
+            <i className="fa-solid fa-headset text-3xl group-hover:scale-110 transition-transform"></i> {ui.start}
           </button>
         ) : (
-          <button 
-            onClick={stopSession} 
-            className="px-10 py-6 md:px-12 md:py-8 bg-slate-800 text-white rounded-[2.5rem] font-black text-xl md:text-2xl hover:bg-rose-600 transition-all flex items-center gap-4"
-          >
-            <i className="fa-solid fa-phone-slash text-2xl md:text-3xl"></i>
-            {ui.stop}
+          <button onClick={stopSession} className="px-16 py-8 bg-slate-900 text-white rounded-[3rem] font-black text-2xl hover:bg-rose-600 transition-all flex items-center gap-6 border border-white/10 shadow-2xl">
+            <i className="fa-solid fa-stop-circle text-3xl"></i> {ui.stop}
           </button>
         )}
-      </div>
-
-      <div className="mt-10 flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase tracking-widest">
-         <i className="fa-solid fa-shield-check text-emerald-500"></i>
-         {language === 'ar' ? 'الوصول للميكروفون مؤمن ومحمي' : 'Microphone Access Secured & Encrypted'}
       </div>
     </div>
   );

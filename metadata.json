@@ -1,7 +1,7 @@
 {
-  "name": "OmniCRM Ultimate v2.1",
-  "short_name": "OmniCRM",
-  "description": "The world's most advanced AI-driven CRM Strategic OS. Install on your device for instant offline strategic intelligence.",
+  "name": "OmniCRM Ultimate USC",
+  "short_name": "OmniUSC",
+  "description": "Universal Strategic Command OS. The peak of AI-driven enterprise intelligence.",
   "requestFramePermissions": [
     "camera",
     "microphone",
@@ -10,5 +10,5 @@
   "theme_color": "#4f46e5",
   "background_color": "#020617",
   "display": "standalone",
-  "version": "2.1.0"
+  "version": "3.0.0"
 }

@@ -38,16 +38,30 @@ export interface Task {
   aiSuggested?: boolean;
 }
 
+export interface AdCampaign {
+  id: string;
+  date: string;
+  goal: string;
+  content: string;
+  locations: string;
+  aiCopy: string;
+  performanceNote: string;
+}
+
 export const NavigationTab = {
   Dashboard: 'dashboard',
   Contacts: 'contacts',
   Deals: 'deals',
   Tasks: 'tasks',
   Marketing: 'marketing',
+  BehaviorExpert: 'behavior_expert',
   MediaLab: 'media_lab',
   EdgeAI: 'edge_ai',
   Intelligence: 'intelligence',
   AI_Consultant: 'ai_consultant',
+  WarRoom: 'war_room',
+  AgentFleet: 'agent_fleet',
+  AdminPortal: 'admin_portal',
   Settings: 'settings'
 } as const;
 
@@ -59,7 +73,8 @@ export interface BrandProfile {
   industry: string;
   description: string;
   targetAudience: string;
-  tokens: number; // الرصيد المتاح للذكاء الاصطناعي
+  tokens: number;
+  rank: 'Commander' | 'Operator' | 'Guest';
   userPsychology?: {
     stressLevel: number;
     focusArea: string;
@@ -75,14 +90,4 @@ export interface ChatLog {
   role: 'user' | 'model';
   text: string;
   timestamp: string;
-}
-
-export interface AdCampaign {
-  id: string;
-  date: string;
-  goal: string;
-  content: string;
-  locations: string;
-  aiCopy: string;
-  performanceNote: string;
 }

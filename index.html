@@ -4,93 +4,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OmniCRM Ultimate | Quantum OS</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json">
+    <title>Omni Business | المنصة المتكاملة لنمو الأعمال</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700;900&display=swap');
-        
-        :root {
-            --quantum-glow: rgba(99, 102, 241, 0.15);
-        }
-
+        :root { --bg-deep: #020617; --accent: #6366f1; }
         body {
             font-family: 'Plus Jakarta Sans', 'Noto Sans Arabic', sans-serif;
-            background-color: #020617;
-            color: #f8fafc;
-            overflow: hidden;
-            -webkit-tap-highlight-color: transparent;
+            background-color: var(--bg-deep);
+            margin: 0; padding: 0; overflow-x: hidden; color: #f8fafc;
         }
-
-        /* Aurora Background Effect */
-        .aurora-bg {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: -1;
-            background: radial-gradient(circle at 10% 20%, #1e1b4b 0%, transparent 40%),
-                        radial-gradient(circle at 90% 80%, #1e293b 0%, transparent 40%),
-                        radial-gradient(circle at 50% 50%, #020617 0%, #020617 100%);
-            filter: blur(80px);
-            opacity: 0.8;
-            animation: aurora-pulse 15s infinite alternate;
+        #root { width: 100vw; height: 100vh; position: relative; z-index: 10; }
+        .boot-screen {
+            position: fixed; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: #020617; z-index: 1000; transition: opacity 0.5s ease;
         }
-
-        @keyframes aurora-pulse {
-            from { opacity: 0.6; transform: scale(1); }
-            to { opacity: 0.9; transform: scale(1.1); }
+        .spinner {
+            width: 40px; height: 40px; border: 2px solid rgba(99, 102, 241, 0.1);
+            border-top: 2px solid var(--accent); border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
-
-        .quantum-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(24px);
-            border: 0.5px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .quantum-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(99, 102, 241, 0.4);
-            transform: translateY(-8px) scale(1.01);
-            box-shadow: 0 0 50px rgba(99, 102, 241, 0.15);
-        }
-
+        @keyframes spin { 100% { transform: rotate(360deg); } }
         .shimmer-text {
-            background: linear-gradient(90deg, #94a3b8, #f8fafc, #94a3b8);
+            background: linear-gradient(90deg, #fff, #6366f1, #fff);
             background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            animation: shimmer 5s linear infinite;
+            animation: shimmer 3s linear infinite;
         }
-
-        @keyframes shimmer {
-            to { background-position: 200% center; }
-        }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 20px; }
-        
-        .mobile-safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        @keyframes shimmer { to { background-position: 200% center; } }
     </style>
-<script type="importmap">
+
+    <script>
+        window.process = { 
+            env: { 
+                NODE_ENV: 'production', 
+                API_KEY: '',
+                SUPABASE_URL: '',
+                SUPABASE_ANON_KEY: ''
+            } 
+        };
+    </script>
+
+    <script type="importmap">
 {
   "imports": {
-    "recharts": "https://esm.sh/recharts@^3.6.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom",
+    "@google/genai": "https://esm.sh/@google/genai@1.3.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.45.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.49.1"
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
 </head>
-<body class="mobile-safe-bottom">
-    <div class="aurora-bg"></div>
+<body>
+    <div id="boot-screen" class="boot-screen">
+        <div class="spinner"></div>
+    </div>
     <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>

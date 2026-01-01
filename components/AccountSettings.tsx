@@ -15,38 +15,40 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ language, brand, setB
 
   const t = {
     en: {
-      title: 'Management Hub',
-      brandSection: 'Brand Identity',
-      tokens: 'Quantum Energy Control',
+      title: 'System Management',
+      brandSection: 'Company Identity',
+      tokens: 'System Energy Units',
       recharge: 'Add 500 Units',
-      reset: 'Zero Balance',
+      reset: 'Reset Budget',
       adminLabel: 'Admin Master Key',
-      save: 'Synchronize System',
+      save: 'Save Changes',
       brandName: 'Business Name',
-      saving: 'Applying Changes...',
-      sqlTitle: 'Strategic Database Deployment',
-      sqlDesc: 'Copy and paste this SQL into Supabase SQL Editor to initialize your cloud brain.',
-      copyBtn: 'Copy Migration Script',
-      copied: 'Script Copied!'
+      saving: 'Updating System...',
+      sqlTitle: 'Cloud Database Setup',
+      sqlDesc: 'For Admins: Execute this in Supabase to start your private cloud memory.',
+      copyBtn: 'Copy SQL Code',
+      copied: 'Copied!',
+      rankLabel: 'User Level'
     },
     ar: {
-      title: 'مركز الإدارة التنفيذي',
-      brandSection: 'هوية العلامة التجارية',
-      tokens: 'التحكم في وحدات الطاقة الاستراتيجية',
+      title: 'إدارة النظام',
+      brandSection: 'هوية البيزنس',
+      tokens: 'وحدات طاقة النظام',
       recharge: 'إضافة ٥٠٠ وحدة',
-      reset: 'تصفير الرصيد',
-      adminLabel: 'مفتاح المسؤول (Master Key)',
-      save: 'مزامنة النظام بالكامل',
-      brandName: 'اسم المشروع',
-      saving: 'جاري تطبيق التعديلات...',
-      sqlTitle: 'نشر قاعدة البيانات الاستراتيجية',
-      sqlDesc: 'انسخ هذا الكود وضعه في SQL Editor داخل Supabase لتفعيل عقلك السحابي.',
-      copyBtn: 'نسخ كود التهيئة (SQL)',
-      copied: 'تم النسخ بنجاح!'
+      reset: 'تصفير الميزانية',
+      adminLabel: 'مفتاح المدير الرئيسي',
+      save: 'حفظ التعديلات',
+      brandName: 'اسم البيزنس',
+      saving: 'جاري التحديث...',
+      sqlTitle: 'إعداد السحابة الخاصة',
+      sqlDesc: 'للمدير فقط: قم بتنفيذ هذا الكود في Supabase لتهيئة ذاكرة النظام السحابية.',
+      copyBtn: 'نسخ كود SQL',
+      copied: 'تم النسخ!',
+      rankLabel: 'مستوى المستخدم'
     }
   }[language];
 
-  const sqlMigration = `-- OMNI CRM STRATEGIC INITIALIZATION
+  const sqlMigration = `-- OMNI CRM INITIALIZATION
 CREATE TABLE IF NOT EXISTS contacts (
   id TEXT PRIMARY KEY,
   name TEXT,
@@ -81,15 +83,6 @@ CREATE TABLE IF NOT EXISTS tasks (
   due_date TEXT,
   ai_suggested BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS brand_profile (
-  id SERIAL PRIMARY KEY,
-  name TEXT,
-  industry TEXT,
-  description TEXT,
-  tokens INTEGER DEFAULT 1000,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );`;
 
   const handleCopySql = () => {
@@ -100,10 +93,11 @@ CREATE TABLE IF NOT EXISTS brand_profile (
 
   const handleAddTokens = () => {
     if (adminKey !== 'OMNI-ELITE-2025') {
-       alert(language === 'ar' ? 'مفتاح المسؤول غير صحيح!' : 'Invalid Admin Key!');
+       alert(language === 'ar' ? 'المفتاح غير صحيح!' : 'Invalid Key!');
        return;
     }
-    setBrand({ ...brand, tokens: brand.tokens + 500 });
+    setBrand({ ...brand, tokens: brand.tokens + 500, rank: 'Commander' });
+    alert(language === 'ar' ? 'تمت إضافة الوحدات بنجاح!' : 'Units added successfully!');
   };
 
   const handleSave = async () => {
@@ -111,40 +105,19 @@ CREATE TABLE IF NOT EXISTS brand_profile (
     await new Promise(r => setTimeout(r, 1000));
     setBrand(brand);
     setIsSaving(false);
-    alert(language === 'ar' ? 'تم تحديث سياق النظام!' : 'System context updated!');
+    alert(language === 'ar' ? 'تم حفظ الإعدادات!' : 'Settings saved!');
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12 pb-32 animate-in slide-in-from-bottom-10 duration-700" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="max-w-6xl mx-auto space-y-12 pb-32 animate-in slide-in-from-bottom-10" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       
-      {/* SQL Migration Section */}
-      <div className="bg-slate-900 rounded-[4rem] p-12 border border-white/5 shadow-3xl overflow-hidden relative group">
-         <div className="absolute top-0 right-0 p-10 opacity-10">
-            <i className="fa-solid fa-database text-9xl text-indigo-400"></i>
-         </div>
-         <div className="relative z-10 space-y-8">
-            <div>
-               <h3 className="text-2xl font-black text-white tracking-tight mb-2">{t.sqlTitle}</h3>
-               <p className="text-slate-400 font-bold text-sm max-w-xl">{t.sqlDesc}</p>
-            </div>
-            <div className="bg-black/50 p-6 rounded-3xl border border-white/10 font-mono text-[10px] text-indigo-300 max-h-40 overflow-y-auto custom-scrollbar whitespace-pre">
-               {sqlMigration}
-            </div>
-            <button 
-              onClick={handleCopySql}
-              className={`px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${copied ? 'bg-emerald-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-xl'}`}
-            >
-              {copied ? t.copied : t.copyBtn}
-            </button>
-         </div>
-      </div>
-
-      {/* Admin Token Panel */}
+      {/* Energy Panel */}
       <div className="bg-indigo-950/40 rounded-[4rem] p-12 border border-indigo-500/20 shadow-3xl relative overflow-hidden group">
          <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
             <div className="flex-1">
-               <h3 className="text-2xl font-black text-white tracking-tight mb-4">{t.tokens}</h3>
-               <div className="flex items-center gap-4 mb-8">
+               <h3 className="text-2xl font-black text-white tracking-tight mb-2">{t.tokens}</h3>
+               <p className="text-indigo-300/60 text-xs mb-6">{language === 'ar' ? 'تحكم في رصيد وحدات التشغيل الخاصة بك.' : 'Control your system operating units.'}</p>
+               <div className="flex flex-wrap items-center gap-4 mb-8">
                   <input 
                     type="password" 
                     placeholder={t.adminLabel} 
@@ -152,20 +125,21 @@ CREATE TABLE IF NOT EXISTS brand_profile (
                     value={adminKey}
                     onChange={e => setAdminKey(e.target.value)}
                   />
-                  <div className="px-6 py-3 bg-white/5 rounded-xl border border-white/10">
+                  <div className="px-6 py-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
                     <span className="text-indigo-400 font-black font-mono">{brand.tokens} Units</span>
                   </div>
                </div>
                <div className="flex gap-4">
-                  <button onClick={handleAddTokens} className="px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-500 transition-all">
+                  <button onClick={handleAddTokens} className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-xl">
                     {t.recharge}
                   </button>
                </div>
             </div>
-            <i className="fa-solid fa-bolt-lightning text-[120px] text-indigo-500/10 absolute -right-4 -bottom-4"></i>
+            <i className="fa-solid fa-bolt text-[120px] text-indigo-500/10 absolute -right-4 -bottom-4"></i>
          </div>
       </div>
 
+      {/* Brand Form */}
       <div className="bg-white dark:bg-slate-900 rounded-[4.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
         <div className="p-12 md:p-16 space-y-16">
           <div className="space-y-8">
@@ -178,6 +152,10 @@ CREATE TABLE IF NOT EXISTS brand_profile (
                <div className="space-y-3">
                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Industry</label>
                  <input className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 rounded-[2rem] outline-none font-bold dark:text-white" value={brand.industry} onChange={e => setBrand({...brand, industry: e.target.value})} />
+               </div>
+               <div className="md:col-span-2 space-y-3">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">{language === 'ar' ? 'عن البيزنس بتاعك (AI Context)' : 'About Your Business'}</label>
+                 <textarea className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-[2.5rem] outline-none font-bold dark:text-white h-40 resize-none" value={brand.description} onChange={e => setBrand({...brand, description: e.target.value})} />
                </div>
             </div>
           </div>

@@ -18,26 +18,26 @@ const ActionMatrix: React.FC<ActionMatrixProps> = ({ tasks, deals, contacts, lan
 
   const t = {
     en: {
-      title: 'Execution Matrix',
-      desc: 'High-impact moves calculated to accelerate revenue.',
+      title: 'Strategic Growth Plan',
+      desc: 'High-impact actions engineered to accelerate business revenue.',
       generate: 'Sync AI Priorities',
-      pending: 'Pending Moves',
-      completed: 'Executed',
-      high: 'Critical',
-      medium: 'Tactical',
-      low: 'Operational',
-      empty: 'No pending strategic moves.'
+      pending: 'Current Actions',
+      completed: 'Executed Steps',
+      high: 'Critical Priority',
+      medium: 'Tactical Step',
+      low: 'Operational Task',
+      empty: 'No pending strategic actions found.'
     },
     ar: {
-      title: 'مصفوفة التنفيذ الاستراتيجي',
-      desc: 'تحركات عالية التأثير محسوبة لتسريع تدفق الإيرادات.',
+      title: 'خطة النمو الاستراتيجي',
+      desc: 'إجراءات عالية التأثير مصممة لتسريع تدفق الأرباح وتوسيع نطاق الأعمال.',
       generate: 'مزامنة أولويات الذكاء الاصطناعي',
-      pending: 'تحركات معلقة',
-      completed: 'تم التنفيذ',
-      high: 'حرج جداً',
-      medium: 'تكتيكي',
-      low: 'تشغيلي',
-      empty: 'لا توجد تحركات استراتيجية معلقة.'
+      pending: 'الإجراءات الحالية',
+      completed: 'خطوات تم تنفيذها',
+      high: 'أولوية قصوى',
+      medium: 'خطوة تكتيكية',
+      low: 'مهمة تشغيلية',
+      empty: 'لا توجد إجراءات استراتيجية معلقة حالياً.'
     }
   }[language];
 
