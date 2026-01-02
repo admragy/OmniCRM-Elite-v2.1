@@ -24,7 +24,7 @@ import KnowledgeBase from './components/KnowledgeBase';
 import { getContacts, getDeals, getTasks, getBrandProfile, updateBrandProfile } from './services/supabaseService';
 
 const INITIAL_BRAND: BrandProfile = {
-  name: 'أومني للنمو',
+  name: 'أومني للنمو الاستراتيجي',
   website: '',
   industry: 'التجارة والخدمات',
   description: 'نظام قيادة استراتيجي متكامل.',
@@ -48,7 +48,6 @@ const App: React.FC = () => {
   const [isLandingView, setIsLandingView] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // تحديث الرتبة من التخزين المحلي فوراً
   useEffect(() => {
     const savedRank = localStorage.getItem('OMNI_USER_RANK') as any;
     if (savedRank && savedRank !== 'Guest') {
@@ -70,7 +69,7 @@ const App: React.FC = () => {
         setTasks(t || []);
         if (b) setBrand(prev => ({ ...prev, ...b, rank: savedRank || b.rank || 'Guest' }));
       } catch (e) {
-        console.warn("Background data load error:", e);
+        console.warn("Data sync bypassed.");
       }
     };
     loadData();
@@ -96,6 +95,10 @@ const App: React.FC = () => {
     return true;
   };
 
+  const handleUpdateDeal = (updatedDeal: Deal) => {
+    setDeals(deals.map(d => d.id === updatedDeal.id ? updatedDeal : d));
+  };
+
   const handleAddTask = (task: Task) => setTasks([task, ...tasks]);
   const handleToggleTask = (id: string) => setTasks(tasks.map(t => t.id === id ? { ...t, status: t.status === 'Pending' ? 'Completed' : 'Pending' } : t));
   const handleDeleteTask = (id: string) => setTasks(tasks.filter(t => t.id !== id));
@@ -119,7 +122,7 @@ const App: React.FC = () => {
              <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-gray-900 text-xl p-2"><i className="fa-solid fa-bars"></i></button>
              <div className="flex flex-col">
                 <h1 className="text-xl font-black text-gray-900 hidden md:block tracking-tighter uppercase">{brand.name}</h1>
-                <span className="text-[9px] font-black uppercase tracking-widest text-blue-600 hidden md:block">{brand.rank} Intelligence Active</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-blue-600 hidden md:block">{brand.rank} Intelligence Node</span>
              </div>
           </div>
           <div className="flex items-center gap-6">
@@ -135,7 +138,7 @@ const App: React.FC = () => {
         <div className="p-4 md:p-8 max-w-7xl mx-auto w-full flex-1">
           {activeTab === NavigationTab.Dashboard && <Dashboard contacts={contacts} deals={deals} language={language} brand={brand} deductTokens={deductTokens} />}
           {activeTab === NavigationTab.Contacts && <ContactList contacts={contacts} language={language} onAddContact={(c) => setContacts([c, ...contacts])} />}
-          {activeTab === NavigationTab.Deals && <DealsPipeline deals={deals} contacts={contacts} language={language} onAddDeal={(d) => setDeals([d, ...deals])} />}
+          {activeTab === NavigationTab.Deals && <DealsPipeline deals={deals} contacts={contacts} language={language} onAddDeal={(d) => setDeals([d, ...deals])} onUpdateDeal={handleUpdateDeal} />}
           {activeTab === NavigationTab.Tasks && <ActionMatrix tasks={tasks} deals={deals} contacts={contacts} language={language} onAddTask={handleAddTask} onToggleTask={handleToggleTask} onDeleteTask={handleDeleteTask} />}
           {activeTab === NavigationTab.KnowledgeBase && <KnowledgeBase brand={brand} setBrand={setBrand} language={language} />}
           {activeTab === NavigationTab.AI_Consultant && <AIConsultant contacts={contacts} deals={deals} language={language} brand={brand} deductTokens={deductTokens} />}

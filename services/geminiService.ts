@@ -34,26 +34,30 @@ export const generateAdImage = async (prompt: string) => {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ text: `Professional high-quality commercial advertisement photography for: ${prompt}. Cinematic lighting, 4k, studio quality.` }] },
+      contents: { parts: [{ text: `Professional advertisement photography for: ${prompt}. High-end commercial style.` }] },
       config: { imageConfig: { aspectRatio: "1:1" } }
     });
     for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
-      }
+      if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
     }
-  } catch (err) {
-    console.error("Image generation failed:", err);
-  }
+  } catch (err) { console.error(err); }
   return null;
 };
 
-// رؤى الأوراكل الاستراتيجية
-export const getSmartInsights = async (contacts: any[], deals: any[], language: 'en' | 'ar') => {
+// رؤى الأوراكل الاستراتيجية (تم التحديث لدمج المعرفة)
+export const getSmartInsights = async (contacts: any[], deals: any[], language: 'en' | 'ar', kb?: string) => {
   const ai = getAIClient();
   const targetLang = language === 'ar' ? 'Arabic' : 'English';
-  const summary = `Partners: ${contacts.length}, Total Deals: ${deals.length}, Revenue: $${deals.reduce((a, b) => a + b.value, 0)}`;
-  const prompt = `Based on this data: ${summary}, provide a visionary, high-level strategic insight for the business owner. Be inspiring and tactical. Respond in ${targetLang}.`;
+  const totalValue = deals.reduce((sum, d) => sum + d.value, 0);
+  const totalCollected = deals.reduce((acc, d) => acc + (d.payments?.filter((p: any) => p.status === 'Paid').reduce((s: any, p: any) => s + p.amount, 0) || 0), 0);
+  
+  const summary = `Stats: ${contacts.length} partners, $${totalValue} Pipeline, $${totalCollected} Collected.`;
+  const prompt = `
+    Based on this data: ${summary}, and this company knowledge base: "${kb || 'No specific KB'}", 
+    provide one powerful, visionary, and tactical strategic insight for the business owner. 
+    Focus on increasing the collection rate and scaling the pipeline. 
+    Respond in ${targetLang}. Keep it punchy and high-level.
+  `;
   
   try {
     const response = await ai.models.generateContent({
@@ -61,7 +65,7 @@ export const getSmartInsights = async (contacts: any[], deals: any[], language: 
       contents: prompt
     });
     return response.text || "";
-  } catch (e) { return ""; }
+  } catch (e) { return "Ready for tactical deployment."; }
 };
 
 // هندسة النمو الفيروسي
@@ -115,7 +119,7 @@ export const enrichContactData = async (company: string, language: 'en' | 'ar') 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Deep scan and enrichment for company: "${company}". Provide business model and recent news. Respond in ${targetLang}.`,
+      contents: `Deep scan and enrichment for company: "${company}". Respond in ${targetLang}.`,
       config: { tools: [{ googleSearch: {} }] }
     });
     return response.text || "";
@@ -125,12 +129,11 @@ export const enrichContactData = async (company: string, language: 'en' | 'ar') 
 // محاكاة الوكلاء
 export const runAgentSimulation = async (problem: string, brand: any, language: 'en' | 'ar') => {
   const ai = getAIClient();
-  const systemInstruction = `Autonomous Agent Orchestrator. Simulate 3 specialist agents. Solve: ${problem}. 
-  Company Info: ${brand.knowledgeBase || brand.description}`;
+  const systemInstruction = `Autonomous Agent Orchestrator. Solve: ${problem}. KB: ${brand.knowledgeBase}`;
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: "Run tactical simulation.",
+      contents: "Run simulation.",
       config: { systemInstruction, thinkingConfig: { thinkingBudget: 1024 } }
     });
     return response.text || "";

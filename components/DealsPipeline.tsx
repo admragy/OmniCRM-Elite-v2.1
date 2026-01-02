@@ -7,12 +7,16 @@ interface DealsPipelineProps {
   contacts: Contact[];
   language: 'en' | 'ar';
   onAddDeal: (deal: Deal) => void;
+  onUpdateDeal?: (deal: Deal) => void;
 }
 
 const STAGES: Deal['stage'][] = ['Discovery', 'Proposal', 'Negotiation', 'Closed Won'];
 
-const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language, onAddDeal }) => {
+const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language, onAddDeal, onUpdateDeal }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
   const [newDeal, setNewDeal] = useState({ title: '', value: '', contactId: '', stage: 'Discovery' as Deal['stage'] });
 
   const getContact = (id: string) => contacts.find(c => c.id === id);
@@ -31,7 +35,10 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
       stageLabel: 'Pipeline Entry',
       save: 'Secure Opportunity',
       collected: 'Collected',
-      remaining: 'Remaining'
+      remaining: 'Remaining',
+      addPayment: 'Record Payment',
+      payAmount: 'Amount ($)',
+      confirmPay: 'Confirm Collection'
     },
     ar: {
       Discovery: 'الاكتشاف',
@@ -46,7 +53,10 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
       stageLabel: 'نقطة الدخول',
       save: 'تأمين الفرصة',
       collected: 'المحصل',
-      remaining: 'المتبقي'
+      remaining: 'المتبقي',
+      addPayment: 'تسجيل دفعة',
+      payAmount: 'المبلغ ($)',
+      confirmPay: 'تأكيد التحصيل'
     }
   }[language];
 
@@ -69,6 +79,24 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
     });
     setIsModalOpen(false);
     setNewDeal({ title: '', value: '', contactId: '', stage: 'Discovery' });
+  };
+
+  const handleAddPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDeal || !onUpdateDeal) return;
+    const newPayment: Payment = {
+        id: `pay-${Date.now()}`,
+        amount: Number(paymentAmount),
+        status: 'Paid',
+        date: new Date().toISOString()
+    };
+    const updatedDeal = {
+        ...selectedDeal,
+        payments: [...(selectedDeal.payments || []), newPayment]
+    };
+    onUpdateDeal(updatedDeal);
+    setIsPaymentModalOpen(false);
+    setPaymentAmount('');
   };
 
   return (
@@ -96,10 +124,12 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
                 const collectionPercent = (collected / deal.value) * 100;
 
                 return (
-                  <div key={deal.id} className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-700 hover:scale-[1.03] transition-all group cursor-pointer">
+                  <div key={deal.id} className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-slate-700 hover:scale-[1.03] transition-all group cursor-pointer">
                     <div className="flex justify-between items-start mb-6">
                         <h5 className="font-black text-slate-800 dark:text-white text-base group-hover:text-indigo-600 transition-colors">{deal.title}</h5>
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal); setIsPaymentModalOpen(true); }} className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center text-xs hover:bg-emerald-500 hover:text-white transition-all">
+                           <i className="fa-solid fa-plus"></i>
+                        </button>
                     </div>
                     <div className="flex items-center gap-4 mb-8">
                       <img src={contact?.avatar} className="w-10 h-10 rounded-xl shadow-md border-2 border-white dark:border-slate-600" />
@@ -109,7 +139,6 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
                       </div>
                     </div>
 
-                    {/* Financial Progress Tracker */}
                     <div className="mb-6 space-y-2">
                        <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
                           <span>{t.collected}: ${collected.toLocaleString()}</span>
@@ -133,13 +162,7 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
                 );
               })}
               
-              <button 
-                onClick={() => {
-                    setNewDeal({ ...newDeal, stage });
-                    setIsModalOpen(true);
-                }}
-                className="w-full py-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-[2rem] text-slate-400 dark:text-slate-600 hover:text-indigo-600 hover:border-indigo-400 transition-all text-xs font-black uppercase tracking-widest"
-              >
+              <button onClick={() => { setNewDeal({ ...newDeal, stage }); setIsModalOpen(true); }} className="w-full py-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-[2rem] text-slate-400 dark:text-slate-600 hover:text-indigo-600 hover:border-indigo-400 transition-all text-xs font-black uppercase tracking-widest">
                 <i className="fa-solid fa-plus-circle mr-2"></i> {t.add}
               </button>
             </div>
@@ -147,13 +170,14 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
         );
       })}
 
+      {/* Modal إضافة صفقة */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-3xl animate-in fade-in">
           <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[4rem] p-12 md:p-16 shadow-3xl relative border border-white/10">
              <button onClick={() => setIsModalOpen(false)} className="absolute top-10 right-10 text-slate-300 hover:text-rose-500 transition-colors"><i className="fa-solid fa-circle-xmark text-4xl"></i></button>
              <div className="mb-12">
                 <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tighter">{t.modalTitle}</h2>
-                <p className="text-slate-400 font-bold text-sm">{language === 'ar' ? 'قم بتسجيل تفاصيل الفرصة لضمان دقة التوقعات' : 'Log opportunity details for precise forecasting'}</p>
+                <p className="text-slate-400 font-bold text-sm uppercase tracking-widest">{language === 'ar' ? 'سجل تفاصيل الفرصة لضمان دقة التوقعات' : 'Log opportunity details for precise forecasting'}</p>
              </div>
              
              <form onSubmit={handleSubmit} className="space-y-8">
@@ -182,6 +206,25 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
                 </div>
                 <button type="submit" className="w-full py-8 bg-indigo-600 text-white rounded-[2.5rem] font-black text-xl shadow-3xl shadow-indigo-200 dark:shadow-indigo-900/40 hover:bg-indigo-700 active:scale-95 transition-all mt-6 uppercase tracking-widest">
                   {t.save}
+                </button>
+             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal تسجيل دفعة */}
+      {isPaymentModalOpen && (
+        <div className="fixed inset-0 z-[201] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-3xl animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[3.5rem] p-10 shadow-4xl relative border border-emerald-500/20">
+             <button onClick={() => setIsPaymentModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><i className="fa-solid fa-circle-xmark text-3xl"></i></button>
+             <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-8 tracking-tighter">{t.addPayment}</h3>
+             <form onSubmit={handleAddPayment} className="space-y-6">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">{t.payAmount}</label>
+                   <input required type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:ring-4 focus:ring-emerald-500/5 font-black text-slate-900 dark:text-white" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} autoFocus />
+                </div>
+                <button type="submit" className="w-full py-6 bg-emerald-600 text-white rounded-[2rem] font-black text-lg shadow-xl hover:bg-emerald-700 transition-all uppercase tracking-widest">
+                   {t.confirmPay}
                 </button>
              </form>
           </div>
