@@ -28,65 +28,11 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
   const currentInputTranscription = useRef('');
   const currentOutputTranscription = useRef('');
 
-  const getCrmContext = () => {
-    const totalValue = deals.reduce((sum, d) => sum + d.value, 0);
-    return `The current CRM state: Total revenue is $${totalValue}. Industry: ${brand.industry}. Mode: ${mode}.`;
-  };
-
-  const startVisualizer = (stream: MediaStream, context: AudioContext) => {
-    const source = context.createMediaStreamSource(stream);
-    const analyser = context.createAnalyser();
-    analyser.fftSize = 512;
-    source.connect(analyser);
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const draw = () => {
-      if (!isActive) return;
-      requestAnimationFrame(draw);
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      analyser.getByteFrequencyData(dataArray);
-      
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      
-      const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-      const intensity = average / 128;
-
-      const color = mode === 'Combat' ? '#f43f5e' : status === 'speaking' ? '#10b981' : '#6366f1';
-      
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 120 + intensity * 20, 0, 2 * Math.PI);
-      ctx.strokeStyle = color;
-      ctx.globalAlpha = 0.2 * intensity;
-      ctx.lineWidth = 30;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-
-      const barCount = 120;
-      for (let i = 0; i < barCount; i++) {
-        const angle = (i / barCount) * Math.PI * 2;
-        const value = dataArray[i % dataArray.length];
-        const barHeight = (value / 255) * 100 * intensity;
-        
-        const x1 = centerX + Math.cos(angle) * 130;
-        const y1 = centerY + Math.sin(angle) * 130;
-        const x2 = centerX + Math.cos(angle) * (130 + barHeight);
-        const y2 = centerY + Math.sin(angle) * (130 + barHeight);
-        
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-      }
-    };
-    draw();
+  const stopSession = () => {
+    if (sessionPromiseRef.current) sessionPromiseRef.current.then(s => s.close());
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    setIsActive(false);
+    setStatus('idle');
   };
 
   const startSession = async () => {
@@ -111,8 +57,6 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
           onopen: () => {
             setStatus('listening');
             setIsActive(true);
-            startVisualizer(stream, inputCtx);
-            
             const source = inputCtx.createMediaStreamSource(stream);
             const scriptProcessor = inputCtx.createScriptProcessor(4096, 1, 1);
             scriptProcessor.onaudioprocess = (e) => {
@@ -131,10 +75,7 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
              if (message.serverContent?.outputTranscription) currentOutputTranscription.current += message.serverContent.outputTranscription.text;
 
              if (message.serverContent?.turnComplete) {
-               const userText = currentInputTranscription.current.trim();
-               const modelText = currentOutputTranscription.current.trim();
-               if (userText) setTranscriptions(prev => [...prev, `User: ${userText}`]);
-               if (modelText) setTranscriptions(prev => [...prev, `Advisor: ${modelText}`]);
+               setTranscriptions(prev => [...prev.slice(-10), `User: ${currentInputTranscription.current}`, `Omni: ${currentOutputTranscription.current}`]);
                currentInputTranscription.current = '';
                currentOutputTranscription.current = '';
              }
@@ -162,7 +103,7 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Charon' } } },
-          systemInstruction: `IDENTITY: OmniAdvisor V3. Mode: ${mode}. Language: ${targetLang}. Context: ${getCrmContext()}`,
+          systemInstruction: `ROLE: Strategic Growth Advisor. MODE: ${mode}. LANGUAGE: ${targetLang}.`,
           inputAudioTranscription: {},
           outputAudioTranscription: {}
         }
@@ -171,48 +112,36 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ contacts, deals, language, 
     } catch (err) { setStatus('idle'); }
   };
 
-  const stopSession = () => {
-    if (sessionPromiseRef.current) sessionPromiseRef.current.then(s => s.close());
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-    setIsActive(false);
-    setStatus('idle');
-  };
-
-  const ui = {
-    ar: { title: 'مستشار النمو الاستراتيجي', start: 'بدء الجلسة الاستشارية', stop: 'إنهاء الجلسة' },
-    en: { title: 'Strategic Growth Advisor', start: 'Start Advisory Session', stop: 'End Session' }
-  }[language];
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-[85vh] bg-slate-950 rounded-[5rem] p-12 border border-white/5 relative overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="flex flex-col items-center justify-center min-h-[85vh] bg-[#020617] rounded-[5rem] p-12 border border-white/5 relative overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="absolute top-16 flex gap-4 z-20">
         {['Strategic', 'Tactical', 'Combat'].map(m => (
-          <button key={m} onClick={() => setMode(m as any)} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${mode === m ? 'bg-white text-slate-950 border-white' : 'text-slate-500 border-white/10 hover:border-white/30'}`}>{m}</button>
+          <button key={m} onClick={() => setMode(m as any)} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${mode === m ? 'bg-indigo-600 text-white border-indigo-500 shadow-xl' : 'text-slate-500 border-white/10 hover:border-white/30'}`}>{m}</button>
         ))}
       </div>
-      <div className="relative z-10 text-center mb-12">
-        <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-6">{ui.title}</h2>
-        <div className="inline-flex items-center gap-4 px-10 py-4 bg-white/5 rounded-full border border-white/10 backdrop-blur-3xl">
-           <span className={`w-3 h-3 rounded-full ${status === 'listening' ? 'bg-indigo-500 animate-ping' : status === 'speaking' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`}></span>
-           <span className="text-white text-xs font-black uppercase tracking-[0.3em]">{status}</span>
+      
+      <div className="relative z-10 text-center mb-16">
+        <h2 className="text-5xl font-black text-white tracking-tighter mb-8">{language === 'ar' ? 'مستشار النمو الحي' : 'Live Strategic Advisor'}</h2>
+        <div className={`w-48 h-48 rounded-full flex items-center justify-center border-4 ${status === 'speaking' ? 'border-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.3)] animate-pulse' : 'border-indigo-600 shadow-[0_0_50px_rgba(79,70,229,0.2)]'} mx-auto mb-8 transition-all duration-700`}>
+           <i className={`fa-solid ${status === 'speaking' ? 'fa-waveform-lines' : 'fa-microphone'} text-5xl text-white`}></i>
         </div>
+        <p className="text-indigo-400 text-xs font-black uppercase tracking-[0.5em]">{status}</p>
       </div>
-      <canvas ref={canvasRef} width="500" height="500" className="w-[300px] h-[300px] md:w-[400px] md:h-[400px] mb-12 relative z-10" />
-      <div className="w-full max-w-5xl h-64 bg-black/40 rounded-[4rem] p-12 border border-white/5 overflow-y-auto mb-16 flex flex-col gap-6 custom-scrollbar shadow-inner relative z-10">
+
+      <div className="w-full max-w-4xl h-48 bg-black/30 rounded-[3rem] p-10 border border-white/5 overflow-y-auto mb-16 flex flex-col gap-4 custom-scrollbar">
          {transcriptions.map((t, i) => (
-           <div key={i} className={`flex ${t.startsWith('Advisor') ? 'justify-start' : 'justify-end'}`}>
-             <div className={`max-w-[85%] p-6 rounded-[2.5rem] text-sm font-bold ${t.startsWith('Advisor') ? 'bg-indigo-600/10 text-indigo-300 border border-indigo-500/20' : 'bg-white/5 text-white/70 border border-white/10'}`}>{t}</div>
-           </div>
+           <p key={i} className={`text-sm font-bold ${t.startsWith('Omni') ? 'text-indigo-400' : 'text-slate-400'}`}>{t}</p>
          ))}
       </div>
-      <div className="flex gap-8 relative z-10">
+
+      <div className="relative z-10">
         {!isActive ? (
-          <button onClick={startSession} className="px-16 py-8 bg-indigo-600 text-white rounded-[3rem] font-black text-2xl shadow-[0_20px_60px_rgba(99,102,241,0.4)] hover:bg-indigo-500 transition-all flex items-center gap-6 group">
-            <i className="fa-solid fa-headset text-3xl"></i> {ui.start}
+          <button onClick={startSession} className="px-20 py-10 bg-indigo-600 text-white rounded-[3rem] font-black text-3xl shadow-[0_20px_80px_rgba(79,70,229,0.4)] hover:scale-105 active:scale-95 transition-all">
+            {language === 'ar' ? 'تفعيل الرابط العصبي' : 'Engage Neural Link'}
           </button>
         ) : (
-          <button onClick={stopSession} className="px-16 py-8 bg-slate-900 text-white rounded-[3rem] font-black text-2xl hover:bg-rose-600 transition-all flex items-center gap-6 border border-white/10 shadow-2xl">
-            <i className="fa-solid fa-stop-circle text-3xl"></i> {ui.stop}
+          <button onClick={stopSession} className="px-20 py-10 bg-rose-600 text-white rounded-[3rem] font-black text-3xl shadow-[0_20px_80px_rgba(244,63,94,0.4)] hover:scale-105 transition-all">
+            {language === 'ar' ? 'إنهاء الاتصال' : 'Terminate Link'}
           </button>
         )}
       </div>

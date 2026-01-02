@@ -1,11 +1,8 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
-const getAIClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
-};
+const getAIClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// مرافق الصوت والترميز
 export const decodeBase64 = (base64: string) => {
   const binaryString = atob(base64);
   const bytes = new Uint8Array(binaryString.length);
@@ -32,81 +29,59 @@ export async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampl
   return buffer;
 }
 
-// توليد الصور الإعلانية (Elite Edition)
 export const generateAdImage = async (prompt: string) => {
   const ai = getAIClient();
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3-pro-image-preview',
       contents: { 
         parts: [{ 
-          text: `High-end commercial advertisement photography for: ${prompt}. Professional studio lighting, 8k resolution, cinematic composition, minimalist aesthetic.` 
+          text: `ULTRA-PREMIUM ADVERTISEMENT PHOTOGRAPHY: ${prompt}. Studio lighting, 8k resolution, award-winning composition, professional color grading.` 
         }] 
       },
-      config: { 
-        imageConfig: { aspectRatio: "1:1" } 
-      }
+      config: { imageConfig: { aspectRatio: "1:1", imageSize: "1K" } }
     });
     for (const part of response.candidates[0].content.parts) {
       if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
     }
   } catch (err) {
-    console.error("Image Gen Error:", err);
+    console.error("Ad Synthesis Error:", err);
   }
   return null;
 };
 
-// رؤى الأوراكل الاستراتيجية - تحليل البيانات الحقيقية
 export const getSmartInsights = async (contacts: any[], deals: any[], language: 'en' | 'ar', kb?: string) => {
   const ai = getAIClient();
   const targetLang = language === 'ar' ? 'Arabic' : 'English';
-  
-  const totalValue = deals.reduce((sum, d) => sum + d.value, 0);
-  const totalCollected = deals.reduce((acc, d) => {
-    const paid = d.payments?.filter((p: any) => p.status === 'Paid').reduce((sum: number, p: any) => sum + p.amount, 0) || 0;
-    return acc + paid;
-  }, 0);
-  const efficiency = totalValue > 0 ? (totalCollected / totalValue) * 100 : 0;
+  const pipelineValue = deals.reduce((s, d) => s + d.value, 0);
 
   const prompt = `
-    ROLE: Senior Strategic Commander.
-    COMPANY_CONTEXT: "${kb || 'Professional Services'}"
-    CURRENT_METRICS:
-    - Pipeline: $${totalValue}
-    - Collected: $${totalCollected}
-    - Efficiency: ${efficiency.toFixed(1)}%
-    - Active Leads: ${contacts.length}
-
-    TASK: Provide one visionary, aggressive business insight to the CEO in ${targetLang}. 
-    Focus on strategic growth, cash flow optimization, or market dominance. 
-    Tone: Elite, professional, and tactical. No introduction.
+    IDENTITY: Universal Strategic Commander.
+    KNOWLEDGE_BASE: "${kb || 'General Strategy'}".
+    CONTEXT: Pipeline $${pipelineValue}, Partners: ${contacts.length}.
+    TASK: Provide a high-level strategic "Order of the Day" in ${targetLang}. 
+    Focus on market dominance. Tone: Direct, Elite, Visionary.
   `;
   
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: prompt,
-      config: { thinkingConfig: { thinkingBudget: 0 } }
+      config: { tools: [{ googleSearch: {} }], thinkingConfig: { thinkingBudget: 2000 } }
     });
-    return response.text?.trim() || "System Synchronized. Awaiting orders.";
+    return response.text || "Neural link synchronized.";
   } catch (e) {
-    return "Ready for deployment.";
+    return "Strategic link stable. Ready for commands.";
   }
 };
 
-// أولويات النمو - تحويل الأرقام لمهام تنفيذية
 export const getStrategicPriorities = async (contacts: any[], deals: any[], language: 'en' | 'ar'): Promise<any[]> => {
   const ai = getAIClient();
-  const summary = { 
-    leads: contacts.length, 
-    total_val: deals.reduce((s,d) => s+d.value, 0),
-    uncollected: deals.reduce((s,d) => s + (d.value - (d.payments?.reduce((ps:any, p:any) => ps + p.amount, 0) || 0)), 0)
-  };
-
+  const langTag = language === 'ar' ? 'Arabic' : 'English';
   try {
     const response = await ai.models.generateContent({ 
       model: 'gemini-3-flash-preview', 
-      contents: `Based on this business state: ${JSON.stringify(summary)}, generate 3 high-impact tasks as JSON array: [{ "task": "string", "impact": "High/Medium", "reason": "string" }]. Language: ${language === 'ar' ? 'Arabic' : 'English'}. Focus on ROI and speed.`, 
+      contents: `CRM Analytics Summary: ${contacts.length} partners, $${deals.reduce((s, d) => s + d.value, 0)} value. Generate 3 strategic tasks in ${langTag}. Respond ONLY with JSON: [{ "task": "...", "impact": "High/Medium", "reason": "..." }]`, 
       config: { responseMimeType: "application/json" } 
     });
     return JSON.parse(response.text || '[]');
@@ -115,13 +90,12 @@ export const getStrategicPriorities = async (contacts: any[], deals: any[], lang
   }
 };
 
-// استخبارات السوق - استخدام البحث المباشر
 export const getMarketIntelligence = async (industry: string, language: 'en' | 'ar') => {
   const ai = getAIClient();
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Search for the latest 2024/2025 business trends, news, and market gaps in the ${industry} industry. Focus on opportunities for growth. Language: ${language === 'ar' ? 'Arabic' : 'English'}.`,
+      contents: `DEEP SCAN INDUSTRY: ${industry}. Latest 2025 business trends, news, and untapped gaps. Language: ${language === 'ar' ? 'Arabic' : 'English'}.`,
       config: { tools: [{ googleSearch: {} }] }
     });
     return { 
@@ -129,19 +103,17 @@ export const getMarketIntelligence = async (industry: string, language: 'en' | '
       trends: response.candidates?.[0]?.groundingMetadata?.groundingChunks || [] 
     };
   } catch (error) {
-    return { report: "Sync error.", trends: [] };
+    return { report: "Neural scan offline.", trends: [] };
   }
 };
 
-// خبير السلوك - تحليل سيكولوجي عميق
 export const analyzeBehavior = async (input: string, industry: string, language: 'en' | 'ar') => {
   const ai = getAIClient();
-  const targetLang = language === 'ar' ? 'Arabic' : 'English';
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       config: { responseMimeType: "application/json" },
-      contents: `Analyze client psychology: "${input}". Industry: ${industry}. Language: ${targetLang}. Return JSON: {"trait": "string", "mood": "string", "psychology": "string", "strategy": "string"}`,
+      contents: `Analyze psychology of: "${input}". Industry: ${industry}. Language: ${language === 'ar' ? 'Arabic' : 'English'}. JSON: {"trait": "...", "mood": "...", "psychology": "...", "strategy": "..."}`,
     });
     return JSON.parse(response.text || '{}');
   } catch (e) {
@@ -149,54 +121,6 @@ export const analyzeBehavior = async (input: string, industry: string, language:
   }
 };
 
-// Fix: Added missing export enrichContactData
-export const enrichContactData = async (company: string, language: 'en' | 'ar') => {
-  const ai = getAIClient();
-  const targetLang = language === 'ar' ? 'Arabic' : 'English';
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Conduct a deep web scan for intelligence about the company "${company}". Summarize their market position, key offerings, and recent corporate updates. Language: ${targetLang}.`,
-      config: { tools: [{ googleSearch: {} }] }
-    });
-    return response.text || "No specific intelligence found for this entity.";
-  } catch (e) {
-    console.error("Enrichment error:", e);
-    return "Intelligence acquisition failed. Connection unstable.";
-  }
-};
-
-// Fix: Added missing export analyzeGlobalRisk
-export const analyzeGlobalRisk = async (query: string, lat: number, lng: number, language: 'en' | 'ar') => {
-  const ai = getAIClient();
-  const targetLang = language === 'ar' ? 'Arabic' : 'English';
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Assess tactical and spatial risks related to: "${query}". Provide a high-level strategic report based on current geographic context. Language: ${targetLang}.`,
-      config: {
-        tools: [{ googleSearch: {} }, { googleMaps: {} }],
-        toolConfig: {
-          retrievalConfig: {
-            latLng: {
-              latitude: lat,
-              longitude: lng
-            }
-          }
-        }
-      }
-    });
-    return {
-      text: response.text || "Risk analysis completed with no major alerts.",
-      grounding: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
-    };
-  } catch (e) {
-    console.error("War Room Error:", e);
-    return { text: "Strategic scan failed to initialize.", grounding: [] };
-  }
-};
-
-// Fix: Added missing export runAgentSimulation
 export const runAgentSimulation = async (problem: string, brand: any, language: 'en' | 'ar') => {
   const ai = getAIClient();
   const targetLang = language === 'ar' ? 'Arabic' : 'English';
@@ -204,30 +128,30 @@ export const runAgentSimulation = async (problem: string, brand: any, language: 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: `
-        SYSTEM: Multi-Agent Tactical Simulation.
-        PROBLEM: "${problem}"
-        CONTEXT: Business Industry: ${brand.industry}, Brand: ${brand.name}.
-        TASK: Simulate a collaborative session between three specialized AI agents: a Strategic Architect, a Tactical Operator, and a Risk Mitigator. Develop a unified solution.
-        OUTPUT: Professional simulation transcript.
-        LANGUAGE: ${targetLang}.
+        SIMULATE TACTICAL WAR ROOM.
+        PROBLEM: "${problem}".
+        CLIENT_CONTEXT: "${brand.name}", INDUSTRY: "${brand.industry}".
+        PARTICIPANTS: 
+        1. General Strategist (Vision & Scale)
+        2. Data Analyst (Risk & Numbers)
+        3. Execution Officer (Speed & Tactics)
+        Output a detailed transcript of their debate and final decision in ${targetLang}. 
+        Format as a professional field report.
       `,
-      config: { thinkingConfig: { thinkingBudget: 4000 } }
+      config: { thinkingConfig: { thinkingBudget: 8000 } }
     });
-    return response.text || "Simulation concluded without output.";
+    return response.text || "Simulation concluded.";
   } catch (e) {
-    console.error("Simulation error:", e);
-    return "Agent fleet synchronization failed.";
+    return "Neural synchronization failed for agent fleet.";
   }
 };
 
-// Fix: Added missing export getGrowthStrategy
 export const getGrowthStrategy = async (industry: string, language: 'en' | 'ar') => {
   const ai = getAIClient();
-  const targetLang = language === 'ar' ? 'Arabic' : 'English';
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Analyze viral growth patterns and non-traditional marketing opportunities for the ${industry} sector in 2025. Provide a guerrilla strategy. Language: ${targetLang}.`,
+      contents: `GUERRILLA GROWTH PLAN 2025: ${industry}. Non-traditional reach hacks. Language: ${language === 'ar' ? 'Arabic' : 'English'}.`,
       config: { tools: [{ googleSearch: {} }] }
     });
     return {
@@ -235,7 +159,40 @@ export const getGrowthStrategy = async (industry: string, language: 'en' | 'ar')
       sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
     };
   } catch (e) {
-    console.error("Growth Lab Error:", e);
-    return { text: "Growth engineering logic failed.", sources: [] };
+    return { text: "Strategy engineering failed.", sources: [] };
+  }
+};
+
+export const enrichContactData = async (company: string, language: 'en' | 'ar') => {
+  const ai = getAIClient();
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Search for strategic data about "${company}". Focus on key people, market cap, and competitors. Language: ${language === 'ar' ? 'Arabic' : 'English'}.`,
+      config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "No intelligence found.";
+  } catch (e) {
+    return "Deep scan interrupted.";
+  }
+};
+
+export const analyzeGlobalRisk = async (query: string, lat: number, lng: number, language: 'en' | 'ar') => {
+  const ai = getAIClient();
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `SPATIAL RISK ANALYSIS for "${query}" near coordinates [${lat}, ${lng}]. Evaluate business continuity, local news, and geographical threats. Language: ${language === 'ar' ? 'Arabic' : 'English'}.`,
+      config: {
+        tools: [{ googleMaps: {} }, { googleSearch: {} }],
+        toolConfig: { retrievalConfig: { latLng: { latitude: lat, longitude: lng } } }
+      }
+    });
+    return {
+      text: response.text || "Risk analysis nominal.",
+      grounding: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
+    };
+  } catch (e) {
+    return { text: "Scan failed.", grounding: [] };
   }
 };

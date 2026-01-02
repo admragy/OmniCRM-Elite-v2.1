@@ -24,15 +24,15 @@ import KnowledgeBase from './components/KnowledgeBase';
 import { getContacts, getDeals, getTasks, getBrandProfile, updateBrandProfile } from './services/supabaseService';
 
 const INITIAL_BRAND: BrandProfile = {
-  name: 'أومني للنمو الاستراتيجي',
+  name: 'OMNI COMMAND OS',
   website: '',
-  industry: 'التجارة والخدمات',
-  description: 'نظام قيادة استراتيجي متكامل.',
-  targetAudience: 'أصحاب الأعمال',
-  tokens: 5000, 
+  industry: 'Strategic Services',
+  description: 'Ultimate Universal Strategic Command.',
+  targetAudience: 'Global Market Leaders',
+  tokens: 10000, 
   rank: 'Guest',
   knowledgeBase: '',
-  userPsychology: { stressLevel: 0, focusArea: 'النمو', managementStyle: 'منظم' },
+  userPsychology: { stressLevel: 0, focusArea: 'Scaling', managementStyle: 'Commander' },
   aiMemory: { adHistory: [], chatHistory: [] }
 };
 
@@ -51,7 +51,6 @@ const App: React.FC = () => {
   useEffect(() => {
     const savedRank = localStorage.getItem('OMNI_USER_RANK') as any;
     if (savedRank && savedRank !== 'Guest') {
-      setBrand(prev => ({ ...prev, rank: savedRank }));
       setIsLandingView(false);
     }
     setIsLoaded(true); 
@@ -69,7 +68,7 @@ const App: React.FC = () => {
         setTasks(t || []);
         if (b) setBrand(prev => ({ ...prev, ...b, rank: savedRank || b.rank || 'Guest' }));
       } catch (e) {
-        console.warn("Data sync bypassed.");
+        console.warn("Data Sync Bypass: Offline Mode.");
       }
     };
     loadData();
@@ -88,11 +87,9 @@ const App: React.FC = () => {
   };
 
   const deductTokens = async (amount: number) => {
-    // للقائد (Commander)، الوحدات غير محدودة للعمليات الاستراتيجية
     if (brand.rank === 'Commander') return true;
-    
     if (brand.tokens < amount) {
-      alert(language === 'ar' ? 'وحدات الطاقة غير كافية!' : 'Insufficient Operational Capital!');
+      alert(language === 'ar' ? 'رأس مالك التشغيلي غير كافٍ!' : 'Insufficient Operational Capital!');
       return false;
     }
     const newBrand = { ...brand, tokens: brand.tokens - amount };
@@ -112,8 +109,10 @@ const App: React.FC = () => {
   if (!isLoaded) return null;
   if (isLandingView) return <LandingPage onLaunch={handleLaunch} />;
 
+  const isCommander = brand.rank === 'Commander';
+
   return (
-    <div className="flex h-screen bg-[#020617] text-slate-200 overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`flex h-screen ${isCommander ? 'bg-[#020617]' : 'bg-slate-50'} text-slate-200 overflow-hidden font-sans transition-colors duration-1000`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <Sidebar 
         brand={brand} 
         activeTab={activeTab} 
@@ -122,26 +121,40 @@ const App: React.FC = () => {
         onOpenGuide={() => setIsGuideOpen(true)} 
       />
 
-      <main className="flex-1 overflow-y-auto flex flex-col relative bg-slate-950/50">
-        <header className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-slate-900/40 backdrop-blur-3xl sticky top-0 z-[100]">
-          <div className="flex items-center gap-4">
-             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-white text-xl p-2"><i className="fa-solid fa-bars"></i></button>
-             <div className="flex flex-col">
-                <h1 className="text-xl font-black text-white hidden md:block tracking-tighter uppercase">{brand.name}</h1>
-                <span className="text-[9px] font-black uppercase tracking-[0.5em] text-indigo-500 hidden md:block">Tactical Node: {brand.rank}</span>
-             </div>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className={`px-4 py-1.5 rounded-full flex items-center gap-2 border ${brand.rank === 'Commander' ? 'bg-indigo-600/20 border-indigo-500/30' : 'bg-slate-800 border-white/5'}`}>
-              <span className="text-xs font-black text-white">{brand.rank === 'Commander' ? '∞' : brand.tokens.toLocaleString()}</span>
-              <i className="fa-solid fa-bolt-lightning text-indigo-400 text-[10px]"></i>
+      <main className="flex-1 overflow-y-auto flex flex-col relative bg-transparent">
+        {/* Cinematic Header */}
+        <header className={`px-10 py-6 border-b ${isCommander ? 'border-white/5 bg-slate-900/40' : 'border-slate-200 bg-white'} backdrop-blur-3xl sticky top-0 z-[100] transition-all`}>
+          <div className="flex justify-between items-center max-w-7xl mx-auto w-full">
+            <div className="flex items-center gap-6">
+               <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-white text-xl p-2"><i className="fa-solid fa-bars"></i></button>
+               <div className="flex flex-col">
+                  <h1 className={`text-2xl font-black tracking-tighter uppercase ${isCommander ? 'text-white' : 'text-slate-900'}`}>{brand.name}</h1>
+                  <div className="flex items-center gap-2">
+                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                     <span className="text-[8px] font-black uppercase tracking-[0.4em] text-indigo-500">SECURE NODE: {brand.rank} ACTIVE</span>
+                  </div>
+               </div>
             </div>
-            <button onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')} className="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-[0.2em] transition-all">{language === 'ar' ? 'ENG' : 'AR'}</button>
-            <button onClick={handleLogout} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all border border-white/5"><i className="fa-solid fa-power-off"></i></button>
+            
+            <div className="flex items-center gap-8">
+              <div className={`px-6 py-2 rounded-2xl flex items-center gap-3 border shadow-sm transition-all ${isCommander ? 'bg-indigo-600/10 border-indigo-500/30' : 'bg-slate-100 border-slate-200'}`}>
+                <i className="fa-solid fa-bolt-lightning text-indigo-500 text-[10px]"></i>
+                <span className={`text-xs font-black ${isCommander ? 'text-white' : 'text-slate-900'}`}>{isCommander ? 'UNLIMITED ENERGY' : brand.tokens.toLocaleString()}</span>
+              </div>
+              
+              <button onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')} className="text-[10px] font-black text-slate-500 hover:text-indigo-500 uppercase tracking-widest transition-all">
+                 {language === 'ar' ? 'ENGLISH OS' : 'نظام عربي'}
+              </button>
+              
+              <button onClick={handleLogout} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${isCommander ? 'bg-white/5 border-white/5 text-slate-400 hover:bg-rose-500/20 hover:text-rose-500' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-slate-200'}`}>
+                 <i className="fa-solid fa-power-off"></i>
+              </button>
+            </div>
           </div>
         </header>
 
-        <div className="p-4 md:p-8 max-w-7xl mx-auto w-full flex-1">
+        {/* Tactical Content Area */}
+        <div className="p-6 md:p-12 max-w-7xl mx-auto w-full flex-1">
           {activeTab === NavigationTab.Dashboard && <Dashboard contacts={contacts} deals={deals} language={language} brand={brand} deductTokens={deductTokens} />}
           {activeTab === NavigationTab.Contacts && <ContactList contacts={contacts} language={language} onAddContact={(c) => setContacts([c, ...contacts])} />}
           {activeTab === NavigationTab.Deals && <DealsPipeline deals={deals} contacts={contacts} language={language} onAddDeal={(d) => setDeals([d, ...deals])} onUpdateDeal={handleUpdateDeal} />}
@@ -159,6 +172,10 @@ const App: React.FC = () => {
           {activeTab === NavigationTab.AdminPortal && <AdminPortal brand={brand} language={language} />}
           {activeTab === NavigationTab.Settings && <AccountSettings language={language} brand={brand} setBrand={setBrand} />}
         </div>
+
+        <footer className="p-8 text-center">
+           <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.5em]">OmniCRM Ultimate v2.5 Elite • USC Global Intelligence Node</p>
+        </footer>
       </main>
 
       <SmartGuide isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} language={language} />
