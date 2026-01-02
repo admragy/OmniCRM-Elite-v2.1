@@ -3,6 +3,7 @@ export interface Contact {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   company: string;
   status: 'Lead' | 'Qualified' | 'Customer' | 'Churned';
   lastInteraction: string;
@@ -17,6 +18,13 @@ export interface Contact {
   };
 }
 
+export interface Payment {
+  id: string;
+  amount: number;
+  status: 'Paid' | 'Pending';
+  date: string;
+}
+
 export interface Deal {
   id: string;
   title: string;
@@ -25,6 +33,7 @@ export interface Deal {
   stage: 'Discovery' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost';
   expectedClose: string;
   probability: number;
+  payments?: Payment[];
 }
 
 export interface Task {
@@ -53,6 +62,7 @@ export const NavigationTab = {
   WarRoom: 'war_room',
   AgentFleet: 'agent_fleet',
   AdminPortal: 'admin_portal',
+  KnowledgeBase: 'knowledge_base',
   Settings: 'settings'
 } as const;
 
@@ -66,6 +76,7 @@ export interface BrandProfile {
   targetAudience: string;
   tokens: number;
   rank: 'Commander' | 'Operator' | 'Guest';
+  knowledgeBase?: string; // نص يمثل معرفة الشركة (أسعار، سياسات، الخ)
   userPsychology?: {
     stressLevel: number;
     focusArea: string;

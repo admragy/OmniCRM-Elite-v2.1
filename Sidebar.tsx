@@ -16,13 +16,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, language, on
       dashboard: 'Dashboard', contacts: 'Clients', deals: 'Deals', tasks: 'Growth Plan',
       marketing: 'AI Ads', growth_lab: 'Growth Lab', behavior_expert: 'Psychology', media_lab: 'Video Lab', edge_ai: 'Privacy Node', intelligence: 'Market Pulse',
       ai_consultant: 'Voice Advisor', war_room: 'War Room', agent_fleet: 'Agent Fleet',
-      admin_portal: 'Admin', settings: 'Settings', help: 'Masterclass'
+      admin_portal: 'Admin', settings: 'Settings', help: 'Masterclass', knowledge_base: 'Company Brain'
     },
     ar: {
       dashboard: 'الرئيسية', contacts: 'العملاء', deals: 'الصفقات', tasks: 'خطة النمو',
       marketing: 'الإعلانات', growth_lab: 'مختبر النمو', behavior_expert: 'خبير السلوك', media_lab: 'مختبر الميديا', edge_ai: 'المعالج المحلي', intelligence: 'نبض السوق',
       ai_consultant: 'المستشار الصوتي', war_room: 'غرفة العمليات', agent_fleet: 'أسطول الوكلاء',
-      admin_portal: 'الإدارة العليا', settings: 'الإعدادات', help: 'الدليل التعليمي'
+      admin_portal: 'الإدارة العليا', settings: 'الإعدادات', help: 'الدليل التعليمي', knowledge_base: 'عقل الشركة'
     }
   };
 
@@ -35,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, language, on
     { id: NavigationTab.Deals, icon: 'fa-handshake', label: t.deals },
     { id: NavigationTab.Tasks, icon: 'fa-check-double', label: t.tasks },
     { id: NavigationTab.AI_Consultant, icon: 'fa-comment-dots', label: t.ai_consultant },
+    { id: NavigationTab.KnowledgeBase, icon: 'fa-database', label: t.knowledge_base },
     { id: NavigationTab.Marketing, icon: 'fa-bolt', label: t.marketing },
     { id: NavigationTab.GrowthLab, icon: 'fa-rocket', label: t.growth_lab },
     { id: NavigationTab.BehaviorExpert, icon: 'fa-brain', label: t.behavior_expert },

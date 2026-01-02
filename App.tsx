@@ -19,6 +19,7 @@ import AdminPortal from './components/AdminPortal';
 import MarketIntelligence from './components/MarketIntelligence';
 import ActionMatrix from './components/ActionMatrix';
 import GrowthLab from './components/GrowthLab';
+import KnowledgeBase from './components/KnowledgeBase';
 
 import { getContacts, getDeals, getTasks, getBrandProfile, updateBrandProfile } from './services/supabaseService';
 
@@ -30,6 +31,7 @@ const INITIAL_BRAND: BrandProfile = {
   targetAudience: 'أصحاب الأعمال',
   tokens: 5000, 
   rank: 'Guest',
+  knowledgeBase: '',
   userPsychology: { stressLevel: 0, focusArea: 'النمو', managementStyle: 'منظم' },
   aiMemory: { adHistory: [], chatHistory: [] }
 };
@@ -53,9 +55,8 @@ const App: React.FC = () => {
       setBrand(prev => ({ ...prev, rank: savedRank }));
       setIsLandingView(false);
     }
-    setIsLoaded(true); // التطبيق جاهز للعرض (Landing Page)
+    setIsLoaded(true); 
     
-    // تحميل البيانات في الخلفية
     const loadData = async () => {
       try {
         const [c, d, t, b] = await Promise.all([
@@ -136,6 +137,7 @@ const App: React.FC = () => {
           {activeTab === NavigationTab.Contacts && <ContactList contacts={contacts} language={language} onAddContact={(c) => setContacts([c, ...contacts])} />}
           {activeTab === NavigationTab.Deals && <DealsPipeline deals={deals} contacts={contacts} language={language} onAddDeal={(d) => setDeals([d, ...deals])} />}
           {activeTab === NavigationTab.Tasks && <ActionMatrix tasks={tasks} deals={deals} contacts={contacts} language={language} onAddTask={handleAddTask} onToggleTask={handleToggleTask} onDeleteTask={handleDeleteTask} />}
+          {activeTab === NavigationTab.KnowledgeBase && <KnowledgeBase brand={brand} setBrand={setBrand} language={language} />}
           {activeTab === NavigationTab.AI_Consultant && <AIConsultant contacts={contacts} deals={deals} language={language} brand={brand} deductTokens={deductTokens} />}
           {activeTab === NavigationTab.Marketing && <MarketingCenter language={language} brand={brand} deductTokens={deductTokens} />}
           {activeTab === NavigationTab.GrowthLab && <GrowthLab brand={brand} language={language} />}

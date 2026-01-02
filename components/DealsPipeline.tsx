@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Deal, Contact } from '../types';
+import { Deal, Contact, Payment } from '../types';
 
 interface DealsPipelineProps {
   deals: Deal[];
@@ -29,7 +29,9 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
       valueLabel: 'Cap. Value ($)',
       clientLabel: 'Target Client',
       stageLabel: 'Pipeline Entry',
-      save: 'Secure Opportunity'
+      save: 'Secure Opportunity',
+      collected: 'Collected',
+      remaining: 'Remaining'
     },
     ar: {
       Discovery: 'الاكتشاف',
@@ -42,9 +44,16 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
       valueLabel: 'القيمة التقديرية ($)',
       clientLabel: 'العميل المستهدف',
       stageLabel: 'نقطة الدخول',
-      save: 'تأمين الفرصة'
+      save: 'تأمين الفرصة',
+      collected: 'المحصل',
+      remaining: 'المتبقي'
     }
   }[language];
+
+  const calculateFinance = (deal: Deal) => {
+    const collected = deal.payments?.filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0) || 0;
+    return { collected, remaining: deal.value - collected };
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +64,8 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
       contactId: newDeal.contactId || (contacts[0]?.id || ''),
       stage: newDeal.stage,
       expectedClose: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      probability: 50
+      probability: 50,
+      payments: []
     });
     setIsModalOpen(false);
     setNewDeal({ title: '', value: '', contactId: '', stage: 'Discovery' });
@@ -82,6 +92,9 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
             <div className="flex-1 bg-slate-100/40 dark:bg-slate-900/40 rounded-[3rem] p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col gap-6 overflow-y-auto custom-scrollbar shadow-inner">
               {stageDeals.map(deal => {
                 const contact = getContact(deal.contactId);
+                const { collected, remaining } = calculateFinance(deal);
+                const collectionPercent = (collected / deal.value) * 100;
+
                 return (
                   <div key={deal.id} className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-700 hover:scale-[1.03] transition-all group cursor-pointer">
                     <div className="flex justify-between items-start mb-6">
@@ -95,10 +108,22 @@ const DealsPipeline: React.FC<DealsPipelineProps> = ({ deals, contacts, language
                         <p className="text-[10px] text-slate-400 font-bold">{contact?.company}</p>
                       </div>
                     </div>
+
+                    {/* Financial Progress Tracker */}
+                    <div className="mb-6 space-y-2">
+                       <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
+                          <span>{t.collected}: ${collected.toLocaleString()}</span>
+                          <span>{Math.round(collectionPercent)}%</span>
+                       </div>
+                       <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div className="bg-emerald-500 h-full transition-all duration-1000" style={{ width: `${collectionPercent}%` }}></div>
+                       </div>
+                    </div>
+
                     <div className="flex justify-between items-center pt-6 border-t border-slate-50 dark:border-slate-700">
                       <div className="flex items-center gap-2">
                         <div className="w-10 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                           <div className="bg-emerald-500 h-full" style={{width: `${deal.probability}%`}}></div>
+                           <div className="bg-indigo-500 h-full" style={{width: `${deal.probability}%`}}></div>
                         </div>
                         <span className="text-[9px] font-black text-slate-400">{deal.probability}%</span>
                       </div>
