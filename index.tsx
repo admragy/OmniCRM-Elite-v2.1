@@ -1,23 +1,29 @@
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 
 const container = document.getElementById('root');
-if (container) {
-  const root = createRoot(container);
-  root.render(<App />);
-  
-  // إخفاء شاشة التحميل فور بدء التطبيق مع تأثير انتقال ناعم
+
+const hideBootScreen = () => {
   const boot = document.getElementById('boot-screen');
   if (boot) {
-    // نستخدم نافذة الوقت للتأكد من أن React قد بدأ في المعالجة
+    boot.style.opacity = '0';
+    boot.style.transition = 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+    setTimeout(() => boot.remove(), 800);
+  }
+};
+
+if (container) {
+  try {
+    const root = createRoot(container);
+    root.render(<App />);
+    
+    // إخفاء الشاشة بعد استقرار التحميل
     requestAnimationFrame(() => {
-      setTimeout(() => {
-        boot.style.opacity = '0';
-        boot.style.transition = 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-        setTimeout(() => boot.remove(), 800);
-      }, 500);
+      setTimeout(hideBootScreen, 1000);
     });
+  } catch (error) {
+    console.error("Critical rendering error:", error);
+    hideBootScreen(); // لا نترك المستخدم في شاشة التحميل للأبد
   }
 }
