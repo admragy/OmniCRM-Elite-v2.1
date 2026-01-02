@@ -1,7 +1,7 @@
 {
   "name": "OmniCRM Ultimate USC",
   "short_name": "OmniUSC",
-  "description": "Universal Strategic Command OS. The peak of AI-driven enterprise intelligence.",
+  "description": "Universal Strategic Command OS. AI-driven enterprise intelligence with VEO 3.1 and Real-time Oracle.",
   "requestFramePermissions": [
     "camera",
     "microphone",

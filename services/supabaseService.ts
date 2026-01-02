@@ -25,17 +25,18 @@ if (isSupabaseConfigured) {
 }
 export const supabase = supabaseInstance;
 
+// بيانات تجريبية (Fallback)
 const DEMO_CONTACTS: Contact[] = [
   { 
     id: 'demo-1', 
-    name: 'عميل افتراضي', 
-    company: 'شركة أومني للحلول', 
-    email: 'info@omni.ai', 
+    name: 'عميل أومني الافتراضي', 
+    company: 'أومني كورب للاستشارات', 
+    email: 'ceo@omni-usc.ai', 
     status: 'Customer', 
     lastInteraction: new Date().toISOString(), 
-    value: 12500, 
-    avatar: 'https://ui-avatars.com/api/?name=Omni+User&background=2563eb&color=fff',
-    psychology: { personalityType: 'Driver', sentimentScore: 95, happinessStatus: 'Thrilled', lastTone: 'Professional' } 
+    value: 50000, 
+    avatar: 'https://ui-avatars.com/api/?name=Omni+Commander&background=4f46e5&color=fff',
+    psychology: { personalityType: 'Driver', sentimentScore: 98, happinessStatus: 'Thrilled', lastTone: 'Dominant' } 
   }
 ];
 

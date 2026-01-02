@@ -88,7 +88,13 @@ const App: React.FC = () => {
   };
 
   const deductTokens = async (amount: number) => {
-    if (brand.tokens < amount) return false;
+    // للقائد (Commander)، الوحدات غير محدودة للعمليات الاستراتيجية
+    if (brand.rank === 'Commander') return true;
+    
+    if (brand.tokens < amount) {
+      alert(language === 'ar' ? 'وحدات الطاقة غير كافية!' : 'Insufficient Operational Capital!');
+      return false;
+    }
     const newBrand = { ...brand, tokens: brand.tokens - amount };
     setBrand(newBrand);
     try { await updateBrandProfile(newBrand); } catch (e) {}
@@ -107,7 +113,7 @@ const App: React.FC = () => {
   if (isLandingView) return <LandingPage onLaunch={handleLaunch} />;
 
   return (
-    <div className="flex h-screen bg-[#f8f9fa] overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="flex h-screen bg-[#020617] text-slate-200 overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <Sidebar 
         brand={brand} 
         activeTab={activeTab} 
@@ -116,22 +122,22 @@ const App: React.FC = () => {
         onOpenGuide={() => setIsGuideOpen(true)} 
       />
 
-      <main className="flex-1 overflow-y-auto flex flex-col relative bg-gray-50/30">
-        <header className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-50">
+      <main className="flex-1 overflow-y-auto flex flex-col relative bg-slate-950/50">
+        <header className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-slate-900/40 backdrop-blur-3xl sticky top-0 z-[100]">
           <div className="flex items-center gap-4">
-             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-gray-900 text-xl p-2"><i className="fa-solid fa-bars"></i></button>
+             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-white text-xl p-2"><i className="fa-solid fa-bars"></i></button>
              <div className="flex flex-col">
-                <h1 className="text-xl font-black text-gray-900 hidden md:block tracking-tighter uppercase">{brand.name}</h1>
-                <span className="text-[9px] font-black uppercase tracking-widest text-blue-600 hidden md:block">{brand.rank} Intelligence Node</span>
+                <h1 className="text-xl font-black text-white hidden md:block tracking-tighter uppercase">{brand.name}</h1>
+                <span className="text-[9px] font-black uppercase tracking-[0.5em] text-indigo-500 hidden md:block">Tactical Node: {brand.rank}</span>
              </div>
           </div>
           <div className="flex items-center gap-6">
-            <div className="px-4 py-1.5 bg-gray-50 border border-gray-100 rounded-full flex items-center gap-2">
-              <span className="text-xs font-bold text-gray-600">{brand.tokens.toLocaleString()}</span>
-              <i className="fa-solid fa-bolt text-blue-500 text-xs"></i>
+            <div className={`px-4 py-1.5 rounded-full flex items-center gap-2 border ${brand.rank === 'Commander' ? 'bg-indigo-600/20 border-indigo-500/30' : 'bg-slate-800 border-white/5'}`}>
+              <span className="text-xs font-black text-white">{brand.rank === 'Commander' ? '∞' : brand.tokens.toLocaleString()}</span>
+              <i className="fa-solid fa-bolt-lightning text-indigo-400 text-[10px]"></i>
             </div>
-            <button onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')} className="text-xs font-bold text-gray-400 hover:text-gray-900 uppercase tracking-widest">{language === 'ar' ? 'English' : 'العربية'}</button>
-            <button onClick={handleLogout} className="text-gray-400 hover:text-rose-600 transition-colors"><i className="fa-solid fa-right-from-bracket"></i></button>
+            <button onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')} className="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-[0.2em] transition-all">{language === 'ar' ? 'ENG' : 'AR'}</button>
+            <button onClick={handleLogout} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all border border-white/5"><i className="fa-solid fa-power-off"></i></button>
           </div>
         </header>
 
