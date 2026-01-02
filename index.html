@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -9,44 +9,25 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700;900&display=swap');
-        :root { --bg-deep: #020617; --accent: #6366f1; }
+        :root { --bg-deep: #f8f9fa; --accent: #2563eb; }
         body {
             font-family: 'Plus Jakarta Sans', 'Noto Sans Arabic', sans-serif;
             background-color: var(--bg-deep);
-            margin: 0; padding: 0; overflow-x: hidden; color: #f8fafc;
+            margin: 0; padding: 0; overflow-x: hidden; color: #1d1d1f;
         }
         #root { width: 100vw; height: 100vh; position: relative; z-index: 10; }
         .boot-screen {
             position: fixed; inset: 0; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            background: #020617; z-index: 1000; transition: opacity 0.5s ease;
+            background: #ffffff; z-index: 1000; transition: opacity 0.5s ease;
         }
         .spinner {
-            width: 40px; height: 40px; border: 2px solid rgba(99, 102, 241, 0.1);
+            width: 40px; height: 40px; border: 2px solid rgba(37, 99, 235, 0.1);
             border-top: 2px solid var(--accent); border-radius: 50%;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        .shimmer-text {
-            background: linear-gradient(90deg, #fff, #6366f1, #fff);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: shimmer 3s linear infinite;
-        }
-        @keyframes shimmer { to { background-position: 200% center; } }
     </style>
-
-    <script>
-        window.process = { 
-            env: { 
-                NODE_ENV: 'production', 
-                API_KEY: '',
-                SUPABASE_URL: '',
-                SUPABASE_ANON_KEY: ''
-            } 
-        };
-    </script>
 
     <script type="importmap">
 {

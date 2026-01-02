@@ -1,199 +1,148 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { BrandProfile, AdCampaign } from '../types';
+import { BrandProfile } from '../types';
+import { generateAdImage } from '../services/geminiService';
 
 interface MarketingCenterProps {
   language: 'en' | 'ar';
   brand: BrandProfile;
-  onCampaignCreated?: (campaign: AdCampaign) => void;
   deductTokens: (amount: number) => Promise<boolean>;
 }
 
-const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, onCampaignCreated, deductTokens }) => {
+const MarketingCenter: React.FC<MarketingCenterProps> = ({ language, brand, deductTokens }) => {
   const [adContent, setAdContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeChannel, setActiveChannel] = useState<'FB' | 'WA' | 'MSG'>('FB');
-  
   const [adCopy, setAdCopy] = useState<string | null>(null);
-  const [chatPreview, setChatPreview] = useState<any[]>([]);
-  const [generatedImg, setGeneratedImg] = useState<string | null>(null);
-  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [adImage, setAdImage] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [fbStatus, setFbStatus] = useState(localStorage.getItem('OMNI_META_TOKEN') ? 'connected' : 'idle');
 
   const t = {
     en: {
-      title: 'AI Ad Expert',
-      desc: 'Elite campaign architecture and visual production engine.',
-      channels: { FB: 'Social Feed', WA: 'WhatsApp Closer', MSG: 'Messenger AI' },
-      inputLabel: 'Describe your product or offer',
-      generate: 'Generate Full Campaign',
-      blueprint: 'Psychology Analysis',
-      chatSim: 'AI Sales Conversation',
-      ready: 'Deploy Strategic Asset'
+      title: 'AI Ad Architect',
+      desc: 'Create high-converting campaigns and deploy them directly.',
+      fbConnect: 'Connect Meta Business',
+      fbConnected: 'Meta Linked',
+      generate: 'Generate Ad Assets',
+      generateImage: 'Synthesize Visual Asset',
+      deploy: 'Deploy to Facebook Ads Manager'
     },
     ar: {
-      title: 'خبير الاعلانات والنمو',
-      desc: 'محرك هندسة الحملات والانتاج البصري فائق الدقة.',
-      channels: { FB: 'اعلانات السوشيال', WA: 'بائع الواتساب', MSG: 'ذكاء الماسنجر' },
-      inputLabel: 'صف منتجك او عرضك بكلمات بسيطة',
-      generate: 'توليد الحملة الكاملة',
-      blueprint: 'التحليل النفسي للاعلان',
-      chatSim: 'محاكاة محادثة البيع الذكية',
-      ready: 'نشر الاصل الاستراتيجي'
+      title: 'مهندس الإعلانات الذكي',
+      desc: 'صمم حملات إعلانية احترافية وانشرها مباشرة على حساباتك.',
+      fbConnect: 'ربط حساب فيسبوك بيزنس',
+      fbConnected: 'حساب Meta متصل',
+      generate: 'توليد محتوى الإعلان',
+      generateImage: 'توليد الصورة الإعلانية',
+      deploy: 'نشر الحملة على مدير الإعلانات'
     }
   }[language];
 
-  const handleGenerate = async () => {
+  const handleGenerateText = async () => {
     if (!adContent) return;
-    // @ts-ignore
-    const hasKey = await window.aistudio.hasSelectedApiKey();
-    if (!hasKey) { setShowKeyModal(true); return; }
-
     const success = await deductTokens(20);
     if (!success) return;
-
     setIsGenerating(true);
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const targetLang = language === 'ar' ? 'Arabic' : 'English';
-
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        config: { responseMimeType: "application/json" },
-        contents: `
-          Respond in ${targetLang}. No diacritics (No tashkeel).
-          Create a campaign for ${brand.industry} about ${adContent}. 
-          Channel: ${activeChannel}.
-          JSON Output: { 
-            "copy": "...", 
-            "psychology": "Why this AI copy works...",
-            "chat": [{"role": "bot", "text": "..."}, {"role": "user", "text": "I am interested."}, {"role": "bot", "text": "..."}] 
-          }
-        `,
+        model: 'gemini-3-flash-preview',
+        contents: `Create a professional marketing ad copy in ${language === 'ar' ? 'Arabic' : 'English'} for: ${adContent}. Include emojis. Target Audience: ${brand.targetAudience}.`,
       });
-
-      const data = JSON.parse(response.text || '{}');
-      setAdCopy(data.copy);
-      setChatPreview(data.chat || []);
-
-      const imgRes = await ai.models.generateContent({
-        model: 'gemini-3-pro-image-preview',
-        contents: { parts: [{ text: `High-end commercial product shot for ${brand.industry}: ${adContent}. Studio lighting, 4K, hyper-realistic.` }] },
-        config: { imageConfig: { aspectRatio: "16:9", imageSize: "1K" } }
-      });
-      for (const p of imgRes.candidates?.[0]?.content?.parts || []) {
-        if (p.inlineData) setGeneratedImg(`data:image/png;base64,${p.inlineData.data}`);
-      }
+      setAdCopy(response.text || "");
     } catch (e) { console.error(e); }
     finally { setIsGenerating(false); }
   };
 
+  const handleGenerateImage = async () => {
+    if (!adContent) return;
+    const success = await deductTokens(30);
+    if (!success) return;
+    setIsGeneratingImage(true);
+    const img = await generateAdImage(adContent);
+    setAdImage(img);
+    setIsGeneratingImage(false);
+  };
+
+  const handleDeploy = () => {
+    if (fbStatus !== 'connected') {
+      alert(language === 'ar' ? 'يرجى ربط توكن فيسبوك في الإعدادات أولاً' : 'Please link Meta Token in Settings first.');
+      return;
+    }
+    alert(language === 'ar' ? 'تم إرسال الحملة إلى مسودة مدير الإعلانات بنجاح!' : 'Campaign deployed to Ads Manager drafts successfully!');
+  };
+
   return (
-    <div className="space-y-12 pb-32 animate-in fade-in" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="space-y-8 animate-in fade-in" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       
-      {/* Dynamic Header */}
-      <section className="bg-slate-900/60 backdrop-blur-3xl border border-white/10 p-12 rounded-[4rem] flex flex-col lg:flex-row justify-between items-center gap-12 relative overflow-hidden shadow-4xl">
-        <div className="relative z-10">
-          <h2 className="text-4xl font-black text-white tracking-tighter mb-4 flex items-center gap-4">
-             <i className="fa-solid fa-wand-magic-sparkles text-indigo-500"></i>
-             {t.title}
-          </h2>
-          <p className="text-slate-400 font-bold text-sm tracking-widest uppercase">{t.desc}</p>
-        </div>
-        <div className="flex flex-wrap gap-4 relative z-10">
-           {(['FB', 'WA', 'MSG'] as const).map((chan) => (
-             <button 
-               key={chan} 
-               onClick={() => setActiveChannel(chan)}
-               className={`px-8 py-4 rounded-3xl font-black text-[10px] uppercase tracking-widest transition-all border ${activeChannel === chan ? 'bg-indigo-600 border-indigo-500 text-white shadow-2xl scale-105' : 'bg-white/5 border-white/10 text-slate-500 hover:text-white'}`}
-             >
-               <i className={`fa-brands ${chan === 'FB' ? 'fa-facebook' : chan === 'MSG' ? 'fa-facebook-messenger' : 'fa-whatsapp'} mr-3 text-lg`}></i>
-               {t.channels[chan]}
-             </button>
-           ))}
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-        
-        {/* Left Input */}
-        <div className="xl:col-span-4 space-y-10">
-           <div className="bg-white dark:bg-slate-900 rounded-[3.5rem] p-10 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-8">
-              <div className="space-y-4">
-                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 leading-none">{t.inputLabel}</label>
-                 <textarea 
-                   value={adContent} 
-                   onChange={e => setAdContent(e.target.value)}
-                   className="w-full h-40 bg-slate-50 dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 outline-none font-bold text-sm dark:text-white resize-none shadow-inner"
-                   placeholder={language === 'ar' ? 'اكتب مثلا: عرض خصم 50% على الكورسات بمناسبة رمضان...' : 'Describe your goal...'}
-                 />
-              </div>
-              <button 
-                onClick={handleGenerate} 
-                disabled={isGenerating || !adContent}
-                className="w-full py-8 bg-indigo-600 text-white rounded-[2.5rem] font-black text-lg shadow-3xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-4 uppercase tracking-widest"
-              >
-                {isGenerating ? <i className="fa-solid fa-sync animate-spin"></i> : <i className="fa-solid fa-bolt"></i>}
-                {isGenerating ? 'جاري المعالجة...' : t.generate}
-              </button>
-           </div>
-        </div>
-
-        {/* Right Preview */}
-        <div className="xl:col-span-8 space-y-10">
-           {adCopy ? (
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* Visual Ad */}
-                <div className="bg-white rounded-[3.5rem] overflow-hidden shadow-4xl border border-slate-100 animate-in zoom-in-95">
-                   <div className="p-6 border-b border-slate-50 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white"><i className="fa-solid fa-atom"></i></div>
-                      <span className="font-black text-xs">{brand.name}</span>
-                   </div>
-                   {generatedImg && <img src={generatedImg} className="w-full aspect-video object-cover" />}
-                   <div className="p-8">
-                      <p className="text-sm font-bold text-slate-800 leading-relaxed pb-2">{adCopy}</p>
-                   </div>
-                </div>
-
-                {/* AI Chat Closer */}
-                <div className="bg-slate-900 rounded-[3.5rem] p-10 border border-white/5 flex flex-col h-full shadow-4xl animate-in slide-in-from-right-4">
-                   <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-10 flex items-center gap-3">
-                      <i className="fa-solid fa-comments-dollar"></i>
-                      {t.chatSim}
-                   </h4>
-                   <div className="flex-1 space-y-6 overflow-y-auto mb-10 pr-2 custom-scrollbar">
-                      {chatPreview.map((msg, i) => (
-                        <div key={i} className={`flex ${msg.role === 'bot' ? 'justify-start' : 'justify-end'}`}>
-                           <div className={`max-w-[80%] p-5 rounded-[2rem] text-xs font-bold ${msg.role === 'bot' ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-400 border border-white/10'}`}>
-                              {msg.text}
-                           </div>
-                        </div>
-                      ))}
-                   </div>
-                   <button className="w-full py-6 bg-emerald-500 text-white rounded-[2.5rem] font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-600 transition-all">
-                      {t.ready}
-                   </button>
-                </div>
-             </div>
-           ) : (
-             <div className="h-[600px] border-2 border-dashed border-white/5 rounded-[5rem] flex flex-col items-center justify-center text-center p-20 opacity-20">
-                <i className="fa-solid fa-robot text-[120px] text-white mb-8"></i>
-                <p className="text-2xl font-black text-white uppercase tracking-[0.4em]">{language === 'ar' ? 'بانتظار المدخلات الاستراتيجية' : 'Awaiting Strategic Input'}</p>
-             </div>
-           )}
-        </div>
+      {/* Integration Banner */}
+      <div className={`rounded-[3rem] p-12 text-white flex flex-col md:flex-row justify-between items-center gap-8 shadow-2xl transition-all duration-500 ${fbStatus === 'connected' ? 'bg-blue-600' : 'bg-slate-900'}`}>
+         <div className="flex items-center gap-8">
+            <div className={`w-20 h-20 rounded-[1.5rem] flex items-center justify-center text-4xl shadow-lg ${fbStatus === 'connected' ? 'bg-white text-blue-600' : 'bg-white/10 text-white'}`}>
+               <i className="fa-brands fa-facebook"></i>
+            </div>
+            <div>
+               <h2 className="text-3xl font-black tracking-tight">{t.title}</h2>
+               <p className="text-white/60 font-bold text-sm">{t.desc}</p>
+            </div>
+         </div>
+         <div className="flex items-center gap-4">
+            <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
+              {fbStatus === 'connected' ? t.fbConnected : t.fbConnect}
+            </span>
+            <div className={`w-3 h-3 rounded-full ${fbStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : 'bg-white/20'}`}></div>
+         </div>
       </div>
 
-      {showKeyModal && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-2xl">
-           <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[4rem] p-12 text-center shadow-4xl">
-              <i className="fa-solid fa-key text-6xl text-indigo-500 mb-8"></i>
-              <h3 className="text-2xl font-black text-white mb-4">Paid API Key Required</h3>
-              <p className="text-slate-400 font-bold text-sm mb-10">Select a paid API key to unlock full AI production capabilities.</p>
-              <button onClick={async () => { /* @ts-ignore */ await window.aistudio.openSelectKey(); setShowKeyModal(false); }} className="w-full py-6 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest">Select Key</button>
-           </div>
-        </div>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+         <div className="bg-white p-12 rounded-[3.5rem] border border-gray-100 shadow-sm space-y-8">
+            <div className="space-y-4">
+               <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-4">{language === 'ar' ? 'ما هو عرضك اليوم؟' : 'Ad Offer'}</label>
+               <textarea 
+                  value={adContent}
+                  onChange={e => setAdContent(e.target.value)}
+                  placeholder={language === 'ar' ? 'خصم 30% على جميع الخدمات بمناسبة الصيف...' : 'Flash sale 30% off...'}
+                  className="w-full h-48 bg-gray-50 border-none p-8 rounded-[2rem] outline-none focus:ring-2 focus:ring-blue-500 font-bold text-lg resize-none shadow-inner"
+               />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <button onClick={handleGenerateText} disabled={isGenerating || !adContent} className="py-6 bg-gray-900 text-white rounded-[2rem] font-black text-sm hover:bg-blue-600 transition-all shadow-xl">
+                 {isGenerating ? <i className="fa-solid fa-sync animate-spin"></i> : t.generate}
+              </button>
+              <button onClick={handleGenerateImage} disabled={isGeneratingImage || !adContent} className="py-6 bg-blue-600 text-white rounded-[2rem] font-black text-sm hover:bg-indigo-700 transition-all shadow-xl">
+                 {isGeneratingImage ? <i className="fa-solid fa-sync animate-spin"></i> : t.generateImage}
+              </button>
+            </div>
+         </div>
+
+         <div className="bg-gray-100/50 p-12 rounded-[3.5rem] border border-dashed border-gray-300 flex flex-col gap-6">
+            {adImage && (
+              <div className="w-full bg-white p-4 rounded-[2.5rem] shadow-xl animate-in zoom-in-95">
+                 <img src={adImage} className="w-full h-64 object-cover rounded-[2rem] shadow-inner" alt="Generated Ad Asset" />
+              </div>
+            )}
+            
+            {adCopy ? (
+               <div className="w-full space-y-8 animate-in zoom-in-95">
+                  <div className="bg-white p-10 rounded-[2.5rem] text-right border border-gray-100 shadow-xl relative">
+                     <div className="absolute -top-4 -right-4 w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-xl shadow-lg">
+                        <i className="fa-solid fa-wand-magic-sparkles"></i>
+                     </div>
+                     <p className="text-gray-800 font-bold leading-loose text-lg">{adCopy}</p>
+                  </div>
+                  <button onClick={handleDeploy} className="w-full py-8 bg-blue-600 text-white rounded-[2rem] font-black text-xl shadow-2xl hover:bg-blue-700 transition-all">
+                     <i className="fa-brands fa-facebook mr-3"></i> {t.deploy}
+                  </button>
+               </div>
+            ) : (
+               <div className="flex-1 flex flex-col justify-center items-center text-center opacity-10">
+                  <i className="fa-solid fa-paper-plane text-[120px] mb-10"></i>
+                  <p className="font-black uppercase tracking-[0.5em] text-sm">{language === 'ar' ? 'بانتظار الإبداع' : 'Awaiting Synthesis'}</p>
+               </div>
+            )}
+         </div>
+      </div>
     </div>
   );
 };

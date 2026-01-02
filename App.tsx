@@ -1,39 +1,40 @@
 
 import React, { useState, useEffect } from 'react';
 import { NavigationTab, NavigationTabType, Contact, Deal, BrandProfile, Task } from './types';
-import Sidebar from './components/Sidebar';
+import Sidebar from './Sidebar'; 
 import Dashboard from './components/Dashboard';
 import ContactList from './components/ContactList';
 import DealsPipeline from './components/DealsPipeline';
-import ActionMatrix from './components/ActionMatrix';
-import AIConsultant from './components/AIConsultant';
 import MarketingCenter from './components/MarketingCenter';
+import AccountSettings from './components/AccountSettings';
+import SmartGuide from './components/SmartGuide';
+import LandingPage from './components/LandingPage';
+import AIConsultant from './components/AIConsultant';
 import BehaviorExpert from './components/BehaviorExpert';
 import MediaLab from './components/MediaLab';
 import EdgeIntelligence from './components/EdgeIntelligence';
-import MarketIntelligence from './components/MarketIntelligence';
-import AccountSettings from './components/AccountSettings';
-import SmartGuide from './components/SmartGuide';
-import AdminPortal from './components/AdminPortal';
 import StrategicWarRoom from './components/StrategicWarRoom';
 import AgentFleet from './components/AgentFleet';
-import LandingPage from './components/LandingPage';
-import { getContacts, getDeals, getTasks, getBrandProfile, updateBrandProfile, saveTask, deleteTask as deleteDbTask } from './services/supabaseService';
+import AdminPortal from './components/AdminPortal';
+import MarketIntelligence from './components/MarketIntelligence';
+import ActionMatrix from './components/ActionMatrix';
+import GrowthLab from './components/GrowthLab';
+
+import { getContacts, getDeals, getTasks, getBrandProfile, updateBrandProfile } from './services/supabaseService';
 
 const INITIAL_BRAND: BrandProfile = {
-  name: 'اومني المتكامل',
-  website: 'https://omni-usc.ai',
-  industry: 'ذكاء الاعمال الاستراتيجي',
-  description: 'نظام متكامل لادارة ونمو الاعمال الذكية.',
-  targetAudience: 'اصحاب الشركات والمديرين التنفيذيين.',
-  tokens: 10000, 
-  rank: 'Commander',
-  userPsychology: { stressLevel: 0, focusArea: 'النمو المتسارع', managementStyle: 'سيادي' },
+  name: 'أومني للنمو',
+  website: '',
+  industry: 'التجارة والخدمات',
+  description: 'نظام قيادة استراتيجي متكامل.',
+  targetAudience: 'أصحاب الأعمال',
+  tokens: 5000, 
+  rank: 'Guest',
+  userPsychology: { stressLevel: 0, focusArea: 'النمو', managementStyle: 'منظم' },
   aiMemory: { adHistory: [], chatHistory: [] }
 };
 
 const App: React.FC = () => {
-  const [isLandingView, setIsLandingView] = useState(true);
   const [activeTab, setActiveTab] = useState<NavigationTabType>(NavigationTab.Dashboard);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -42,157 +43,114 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [language, setLanguage] = useState<'en' | 'ar'>('ar');
+  const [isLandingView, setIsLandingView] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // تحديث الرتبة من التخزين المحلي فوراً
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const savedRank = localStorage.getItem('OMNI_USER_RANK') as any;
+    if (savedRank && savedRank !== 'Guest') {
+      setBrand(prev => ({ ...prev, rank: savedRank }));
+      setIsLandingView(false);
+    }
+    setIsLoaded(true); // التطبيق جاهز للعرض (Landing Page)
+    
+    // تحميل البيانات في الخلفية
+    const loadData = async () => {
       try {
-        const [dbC, dbD, dbT, dbB] = await Promise.all([
-          getContacts().catch(() => []),
-          getDeals().catch(() => []),
-          getTasks().catch(() => []),
-          getBrandProfile().catch(() => null)
+        const [c, d, t, b] = await Promise.all([
+          getContacts(),
+          getDeals(),
+          getTasks(),
+          getBrandProfile()
         ]);
-        
-        setContacts(dbC || []);
-        setDeals(dbD || []);
-        setTasks(dbT || []);
-        if (dbB) setBrand({ ...INITIAL_BRAND, ...dbB });
-      } catch (err) {
-        console.error("USC Connection Error:", err);
-      } finally {
-        setIsLoaded(true);
+        setContacts(c || []);
+        setDeals(d || []);
+        setTasks(t || []);
+        if (b) setBrand(prev => ({ ...prev, ...b, rank: savedRank || b.rank || 'Guest' }));
+      } catch (e) {
+        console.warn("Background data load error:", e);
       }
     };
-    fetchInitialData();
+    loadData();
   }, []);
+
+  const handleLaunch = (rank: 'Commander' | 'Operator' | 'Guest') => {
+    localStorage.setItem('OMNI_USER_RANK', rank);
+    setBrand(prev => ({ ...prev, rank }));
+    setIsLandingView(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('OMNI_USER_RANK');
+    setBrand(INITIAL_BRAND);
+    setIsLandingView(true);
+  };
 
   const deductTokens = async (amount: number) => {
     if (brand.tokens < amount) return false;
     const newBrand = { ...brand, tokens: brand.tokens - amount };
     setBrand(newBrand);
-    try {
-      await updateBrandProfile(newBrand);
-    } catch (e) { console.error(e); }
+    try { await updateBrandProfile(newBrand); } catch (e) {}
     return true;
   };
 
-  const handleAddTask = async (task: Task) => {
-    setTasks([task, ...tasks]);
-    await saveTask(task);
-  };
-
-  const handleToggleTask = async (id: string) => {
-    const newTasks = tasks.map(t => t.id === id ? { ...t, status: t.status === 'Completed' ? 'Pending' : 'Completed' as any } : t);
-    setTasks(newTasks);
-    const target = newTasks.find(t => t.id === id);
-    if (target) await saveTask(target);
-  };
-
-  const handleDeleteTask = async (id: string) => {
-    setTasks(tasks.filter(t => t.id !== id));
-    await deleteDbTask(id);
-  };
-
-  const getActiveTabTitle = () => {
-    if (language === 'ar') {
-      const titles: any = {
-        dashboard: 'لوحة التحكم',
-        contacts: 'قاعدة العملاء',
-        deals: 'الصفقات',
-        tasks: 'المهام الاستراتيجية',
-        marketing: 'خبير الاعلانات والنمو',
-        behavior_expert: 'خبير السلوك البشري',
-        media_lab: 'مختبر الميديا',
-        edge_ai: 'الذكاء المحلي',
-        intelligence: 'نبض السوق',
-        ai_consultant: 'المستشار الذكي',
-        war_room: 'غرفة العمليات',
-        agent_fleet: 'بوتات البيع',
-        admin_portal: 'تحكم المدير',
-        settings: 'الاعدادات'
-      };
-      return titles[activeTab] || brand.name;
-    }
-    return activeTab.replace('_', ' ');
-  };
+  const handleAddTask = (task: Task) => setTasks([task, ...tasks]);
+  const handleToggleTask = (id: string) => setTasks(tasks.map(t => t.id === id ? { ...t, status: t.status === 'Pending' ? 'Completed' : 'Pending' } : t));
+  const handleDeleteTask = (id: string) => setTasks(tasks.filter(t => t.id !== id));
 
   if (!isLoaded) return null;
-
-  if (isLandingView) {
-    return (
-      <LandingPage 
-        language={language} 
-        setLanguage={setLanguage} 
-        onLaunch={() => setIsLandingView(false)} 
-      />
-    );
-  }
+  if (isLandingView) return <LandingPage onLaunch={handleLaunch} />;
 
   return (
-    <div className="flex h-screen bg-[#020617] overflow-hidden relative" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-      {isSidebarOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[550] lg:hidden" onClick={() => setIsSidebarOpen(false)}></div>
-      )}
+    <div className="flex h-screen bg-[#f8f9fa] overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      <Sidebar 
+        brand={brand} 
+        activeTab={activeTab} 
+        setActiveTab={(tab) => { setActiveTab(tab); setIsSidebarOpen(false); }} 
+        language={language} 
+        onOpenGuide={() => setIsGuideOpen(true)} 
+      />
 
-      <div className={`fixed inset-y-0 ${language === 'ar' ? 'right-0' : 'left-0'} z-[600] lg:relative lg:translate-x-0 transition-transform duration-500 ${isSidebarOpen ? 'translate-x-0' : (language === 'ar' ? 'translate-x-full' : '-translate-x-full')}`}>
-        <Sidebar 
-          brand={brand} 
-          activeTab={activeTab} 
-          setActiveTab={(tab) => { setActiveTab(tab); setIsSidebarOpen(false); }} 
-          language={language} 
-          onOpenGuide={() => setIsGuideOpen(true)} 
-        />
-      </div>
-
-      <main className="flex-1 overflow-y-auto relative flex flex-col custom-scrollbar bg-slate-950/40 backdrop-blur-[1px]">
-        <header className="sticky top-0 z-[100] px-6 py-4 md:px-10 flex justify-between items-center bg-slate-950/80 backdrop-blur-xl border-b border-white/5">
+      <main className="flex-1 overflow-y-auto flex flex-col relative bg-gray-50/30">
+        <header className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-50">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center text-white border border-white/10">
-              <i className="fa-solid fa-bars text-sm"></i>
-            </button>
-            <div>
-              <h1 className="text-xl md:text-2xl font-black text-white tracking-tighter capitalize shimmer-text pb-1 leading-none">
-                {getActiveTabTitle()}
-              </h1>
-              <p className="text-slate-500 text-[7px] font-black uppercase tracking-[0.3em] leading-none pt-1">{language === 'ar' ? 'عقدة النمو النشطة' : 'Active Growth Node'}</p>
-            </div>
+             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-gray-900 text-xl p-2"><i className="fa-solid fa-bars"></i></button>
+             <div className="flex flex-col">
+                <h1 className="text-xl font-black text-gray-900 hidden md:block tracking-tighter uppercase">{brand.name}</h1>
+                <span className="text-[9px] font-black uppercase tracking-widest text-blue-600 hidden md:block">{brand.rank} Intelligence Active</span>
+             </div>
           </div>
-
-          <div className="flex items-center gap-3">
-            <button onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')} className="px-3 py-1.5 bg-white/5 rounded-lg border border-white/10 text-white font-black text-[8px] uppercase tracking-widest">
-              {language === 'ar' ? 'English' : 'العربية'}
-            </button>
-            <div className="hidden sm:flex px-3 py-1.5 bg-indigo-600/10 rounded-xl border border-indigo-500/20 items-center gap-2">
-               <div className="text-right">
-                  <p className="text-xs font-black text-indigo-400 font-mono leading-none">{brand.tokens}</p>
-               </div>
-               <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center text-white text-[10px]">
-                <i className="fa-solid fa-bolt"></i>
-               </div>
+          <div className="flex items-center gap-6">
+            <div className="px-4 py-1.5 bg-gray-50 border border-gray-100 rounded-full flex items-center gap-2">
+              <span className="text-xs font-bold text-gray-600">{brand.tokens.toLocaleString()}</span>
+              <i className="fa-solid fa-bolt text-blue-500 text-xs"></i>
             </div>
+            <button onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')} className="text-xs font-bold text-gray-400 hover:text-gray-900 uppercase tracking-widest">{language === 'ar' ? 'English' : 'العربية'}</button>
+            <button onClick={handleLogout} className="text-gray-400 hover:text-rose-600 transition-colors"><i className="fa-solid fa-right-from-bracket"></i></button>
           </div>
         </header>
 
-        <div className="p-6 md:p-10 flex-1">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto w-full flex-1">
           {activeTab === NavigationTab.Dashboard && <Dashboard contacts={contacts} deals={deals} language={language} brand={brand} deductTokens={deductTokens} />}
           {activeTab === NavigationTab.Contacts && <ContactList contacts={contacts} language={language} onAddContact={(c) => setContacts([c, ...contacts])} />}
           {activeTab === NavigationTab.Deals && <DealsPipeline deals={deals} contacts={contacts} language={language} onAddDeal={(d) => setDeals([d, ...deals])} />}
           {activeTab === NavigationTab.Tasks && <ActionMatrix tasks={tasks} deals={deals} contacts={contacts} language={language} onAddTask={handleAddTask} onToggleTask={handleToggleTask} onDeleteTask={handleDeleteTask} />}
+          {activeTab === NavigationTab.AI_Consultant && <AIConsultant contacts={contacts} deals={deals} language={language} brand={brand} deductTokens={deductTokens} />}
           {activeTab === NavigationTab.Marketing && <MarketingCenter language={language} brand={brand} deductTokens={deductTokens} />}
+          {activeTab === NavigationTab.GrowthLab && <GrowthLab brand={brand} language={language} />}
           {activeTab === NavigationTab.BehaviorExpert && <BehaviorExpert language={language} brand={brand} deductTokens={deductTokens} />}
           {activeTab === NavigationTab.MediaLab && <MediaLab brand={brand} language={language} deductTokens={deductTokens} />}
-          {activeTab === NavigationTab.AI_Consultant && <AIConsultant brand={brand} contacts={contacts} deals={deals} language={language} deductTokens={deductTokens} />}
-          {activeTab === NavigationTab.WarRoom && <StrategicWarRoom brand={brand} language={language} />}
-          {activeTab === NavigationTab.AgentFleet && <AgentFleet brand={brand} language={language} />}
-          {activeTab === NavigationTab.Intelligence && <MarketIntelligence brand={brand} language={language} />}
           {activeTab === NavigationTab.EdgeAI && <EdgeIntelligence language={language} />}
+          {activeTab === NavigationTab.WarRoom && <StrategicWarRoom brand={brand} language={language} />}
+          {activeTab === NavigationTab.Intelligence && <MarketIntelligence brand={brand} language={language} />}
+          {activeTab === NavigationTab.AgentFleet && <AgentFleet brand={brand} language={language} />}
           {activeTab === NavigationTab.AdminPortal && <AdminPortal brand={brand} language={language} />}
           {activeTab === NavigationTab.Settings && <AccountSettings language={language} brand={brand} setBrand={setBrand} />}
         </div>
-
-        <SmartGuide isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} language={language} />
       </main>
+
+      <SmartGuide isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} language={language} />
     </div>
   );
 };

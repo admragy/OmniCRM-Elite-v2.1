@@ -40,7 +40,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ brand, language }) => {
           content: 'OmniCRM utilizes a unified architecture for global persistence and local privacy. For maximum security, utilize the Edge Intelligence node to process high-value data without cloud dependency.'
         }
       ],
-      quickActions: 'Strategic Master Key: OMNI-ELITE-2025',
+      quickActions: 'Strategic Master Key: admin82@ragy',
       deploymentTitle: 'Cloud Infrastructure Readiness',
       deploymentSteps: [
         'Initialize Unified Storage Node',
@@ -77,7 +77,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ brand, language }) => {
           content: 'يجمع OmniCRM بين المزامنة العالمية والخصوصية المحلية المطلقة. للبيانات فائقة الحساسية، يفضل استخدام عقدة المعالجة المحلية لضمان سيادة البيانات بالكامل داخل جهازك.'
         }
       ],
-      quickActions: 'مفتاح المسؤول الاستراتيجي: OMNI-ELITE-2025',
+      quickActions: 'مفتاح المسؤول الاستراتيجي: admin82@ragy',
       deploymentTitle: 'جاهزية البنية التحتية السحابية',
       deploymentSteps: [
         'تهيئة عقدة التخزين الموحدة (Supabase)',

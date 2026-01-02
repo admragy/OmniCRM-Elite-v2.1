@@ -3,29 +3,21 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 
-const initialize = () => {
-  const container = document.getElementById('root');
-  if (!container) return;
-
-  try {
-    const root = createRoot(container);
-    root.render(<App />);
-    
-    // إخفاء شاشة الإقلاع بعد التشغيل الناجح
-    setTimeout(() => {
-      const boot = document.getElementById('boot-screen');
-      if (boot) {
+const container = document.getElementById('root');
+if (container) {
+  const root = createRoot(container);
+  root.render(<App />);
+  
+  // إخفاء شاشة التحميل فور بدء التطبيق مع تأثير انتقال ناعم
+  const boot = document.getElementById('boot-screen');
+  if (boot) {
+    // نستخدم نافذة الوقت للتأكد من أن React قد بدأ في المعالجة
+    requestAnimationFrame(() => {
+      setTimeout(() => {
         boot.style.opacity = '0';
-        setTimeout(() => boot.remove(), 500);
-      }
-    }, 1500);
-    
-  } catch (err: any) {
-    console.error("Mounting Error:", err);
-    if ((window as any).logStatus) {
-      (window as any).logStatus("Critical UI Error: " + err.message);
-    }
+        boot.style.transition = 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+        setTimeout(() => boot.remove(), 800);
+      }, 500);
+    });
   }
-};
-
-initialize();
+}

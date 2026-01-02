@@ -38,22 +38,13 @@ export interface Task {
   aiSuggested?: boolean;
 }
 
-export interface AdCampaign {
-  id: string;
-  date: string;
-  goal: string;
-  content: string;
-  locations: string;
-  aiCopy: string;
-  performanceNote: string;
-}
-
 export const NavigationTab = {
   Dashboard: 'dashboard',
   Contacts: 'contacts',
   Deals: 'deals',
   Tasks: 'tasks',
   Marketing: 'marketing',
+  GrowthLab: 'growth_lab',
   BehaviorExpert: 'behavior_expert',
   MediaLab: 'media_lab',
   EdgeAI: 'edge_ai',
