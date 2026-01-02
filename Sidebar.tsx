@@ -29,12 +29,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, language, on
   const t = translations[language];
   const isCommander = brand?.rank === 'Commander';
 
-  const navItems: { id: NavigationTabType; icon: string; label: string }[] = [
+  const navItems: { id: NavigationTabType; icon: string; label: string; highlight?: boolean }[] = [
     { id: NavigationTab.Dashboard, icon: 'fa-house', label: t.dashboard },
     { id: NavigationTab.Contacts, icon: 'fa-users', label: t.contacts },
     { id: NavigationTab.Deals, icon: 'fa-handshake', label: t.deals },
     { id: NavigationTab.Tasks, icon: 'fa-check-double', label: t.tasks },
-    { id: NavigationTab.AI_Consultant, icon: 'fa-comment-dots', label: t.ai_consultant },
+    { id: NavigationTab.AI_Consultant, icon: 'fa-comment-dots', label: t.ai_consultant, highlight: true },
     { id: NavigationTab.KnowledgeBase, icon: 'fa-database', label: t.knowledge_base },
     { id: NavigationTab.Marketing, icon: 'fa-bolt', label: t.marketing },
     { id: NavigationTab.GrowthLab, icon: 'fa-rocket', label: t.growth_lab },
@@ -50,46 +50,60 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, language, on
   navItems.push({ id: NavigationTab.Settings, icon: 'fa-gear', label: t.settings });
 
   return (
-    <aside className={`w-64 p-6 h-full flex flex-col transition-all duration-700 ${isCommander ? 'bg-slate-950 border-l border-blue-500/20 shadow-[20px_0_60px_rgba(37,99,235,0.05)]' : 'bg-slate-900 border-r border-white/5'} relative z-[600]`}>
-      <div className="flex items-center gap-3 mb-10 px-2">
-        <div className={`w-8 h-8 ${isCommander ? 'bg-blue-600 shadow-blue-500/50' : 'bg-slate-700'} text-white rounded-lg flex items-center justify-center font-black italic text-sm shadow-lg`}>O</div>
+    <aside className={`w-64 p-6 h-full flex flex-col transition-all duration-700 ${isCommander ? 'bg-slate-950 border-l border-indigo-500/20 shadow-[20px_0_100px_rgba(79,70,229,0.1)]' : 'bg-slate-900 border-r border-white/5'} relative z-[600]`}>
+      
+      {/* Brand Identity */}
+      <div className="flex items-center gap-4 mb-10 px-2 group cursor-pointer">
+        <div className={`w-10 h-10 ${isCommander ? 'bg-indigo-600 shadow-indigo-500/50' : 'bg-slate-700'} text-white rounded-xl flex items-center justify-center font-black italic text-base shadow-2xl group-hover:rotate-12 transition-all`}>O</div>
         <div className="flex flex-col">
-           <h2 className="text-lg font-black text-white tracking-tight uppercase leading-none">OMNI <span className={isCommander ? 'text-blue-500' : 'text-slate-500'}>3.0</span></h2>
-           {isCommander && <span className="text-[7px] font-black text-blue-500 uppercase tracking-[0.3em] mt-1">Commander Node</span>}
+           <h2 className="text-xl font-black text-white tracking-tighter uppercase leading-none">OMNI <span className={isCommander ? 'text-indigo-500' : 'text-slate-500'}>3.0</span></h2>
+           {isCommander && <span className="text-[7px] font-black text-indigo-400 uppercase tracking-[0.5em] mt-1.5">Elite Commander</span>}
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-1">
+      {/* Nav Section */}
+      <nav className="flex-1 space-y-1.5 overflow-y-auto custom-scrollbar pr-1">
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${
+            className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative ${
               activeTab === item.id
-                ? (isCommander ? 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/30' : 'bg-slate-700 text-white font-bold')
+                ? (isCommander ? 'bg-indigo-600 text-white font-bold shadow-xl shadow-indigo-600/30' : 'bg-slate-700 text-white font-bold')
                 : 'text-slate-500 hover:text-white hover:bg-white/5'
             }`}
           >
-            <i className={`fa-solid ${item.icon} text-sm w-5 ${activeTab === item.id ? 'text-white' : 'group-hover:text-blue-400'}`}></i>
-            <span className="text-[11px] font-black uppercase tracking-wider">{item.label}</span>
+            {item.highlight && !activeTab && (
+               <span className="absolute left-1 w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></span>
+            )}
+            <i className={`fa-solid ${item.icon} text-sm w-5 ${activeTab === item.id ? 'text-white' : 'group-hover:text-indigo-400 group-hover:scale-110 transition-transform'}`}></i>
+            <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
           </button>
         ))}
       </nav>
 
-      <div className="mt-auto pt-6 border-t border-white/5 space-y-3">
+      {/* Footer Section */}
+      <div className="mt-auto pt-6 border-t border-white/5 space-y-4">
         {isCommander && (
-           <div className="px-4 py-3 bg-blue-600/10 rounded-xl border border-blue-500/20 mb-4">
-              <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-1 text-center">Security Status: Active</p>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                 <div className="bg-blue-500 h-full w-full animate-pulse"></div>
+           <div className="px-5 py-4 bg-indigo-600/10 rounded-2xl border border-indigo-500/20 mb-4 text-center">
+              <p className="text-[8px] font-black text-indigo-400 uppercase tracking-[0.4em] mb-2">Neural Link: Stable</p>
+              <div className="flex justify-center gap-1">
+                 {[1,2,3,4,5].map(i => <div key={i} className={`w-1 h-3 rounded-full ${i <= 4 ? 'bg-indigo-500' : 'bg-slate-700'} animate-pulse`} style={{ animationDelay: `${i*100}ms` }}></div>)}
               </div>
            </div>
         )}
-        <button onClick={onOpenGuide} className="w-full bg-white/5 px-4 py-4 rounded-xl flex items-center gap-3 text-slate-400 hover:text-white transition-all border border-white/5 group">
-          <i className="fa-solid fa-circle-info text-sm group-hover:text-blue-400"></i>
-          <span className="text-[11px] font-bold uppercase tracking-wider">{t.help}</span>
+        <button onClick={onOpenGuide} className="w-full bg-white/5 px-5 py-4 rounded-2xl flex items-center gap-4 text-slate-400 hover:text-white transition-all border border-white/5 group hover:bg-indigo-600/10 hover:border-indigo-500/20">
+          <i className="fa-solid fa-graduation-cap text-base group-hover:text-indigo-400"></i>
+          <span className="text-[10px] font-black uppercase tracking-widest">{t.help}</span>
         </button>
       </div>
+
+      <style>{`
+         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
+      `}</style>
     </aside>
   );
 };
