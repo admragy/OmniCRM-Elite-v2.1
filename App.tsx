@@ -1,39 +1,33 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { NavigationTab, NavigationTabType, Contact, Deal, BrandProfile, Task } from './types';
 import Sidebar from './Sidebar'; 
 import Dashboard from './components/Dashboard';
 import ContactList from './components/ContactList';
 import DealsPipeline from './components/DealsPipeline';
-import MarketingCenter from './components/MarketingCenter';
-import AccountSettings from './components/AccountSettings';
-import SmartGuide from './components/SmartGuide';
-import LandingPage from './components/LandingPage';
-import AIConsultant from './components/AIConsultant';
 import BehaviorExpert from './components/BehaviorExpert';
-import MediaLab from './components/MediaLab';
-import EdgeIntelligence from './components/EdgeIntelligence';
+import ShadowIntel from './components/ShadowIntel';
+import AdminPortal from './components/AdminPortal';
+import LandingPage from './components/LandingPage';
+import MarketingCenter from './components/MarketingCenter';
+import GrowthLab from './components/GrowthLab';
 import StrategicWarRoom from './components/StrategicWarRoom';
 import AgentFleet from './components/AgentFleet';
-import AdminPortal from './components/AdminPortal';
-import MarketIntelligence from './components/MarketIntelligence';
-import ActionMatrix from './components/ActionMatrix';
-import GrowthLab from './components/GrowthLab';
+import AIConsultant from './components/AIConsultant';
 import KnowledgeBase from './components/KnowledgeBase';
+import MediaLab from './components/MediaLab';
+import EdgeIntelligence from './components/EdgeIntelligence';
 
-import { getContacts, getDeals, getTasks, getBrandProfile, updateBrandProfile } from './services/supabaseService';
+import { getContacts, getDeals, getBrandProfile, getTasks, updateBrandProfile } from './services/supabaseService';
 
 const INITIAL_BRAND: BrandProfile = {
   name: 'OMNI COMMAND OS',
-  website: '',
-  industry: 'Strategic Services',
-  description: 'Ultimate Universal Strategic Command.',
-  targetAudience: 'Global Market Leaders',
+  industry: 'Strategic Dominance',
   tokens: 10000, 
   rank: 'Guest',
+  autoPilot: { enabled: true, targetRoas: 4.5, budgetStep: 50, maxDailySpend: 1000 },
   knowledgeBase: '',
-  userPsychology: { stressLevel: 0, focusArea: 'Scaling', managementStyle: 'Commander' },
-  aiMemory: { adHistory: [], chatHistory: [] }
+  targetAudience: 'High-Value Enterprise'
 };
 
 const App: React.FC = () => {
@@ -42,143 +36,131 @@ const App: React.FC = () => {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [brand, setBrand] = useState<BrandProfile>(INITIAL_BRAND);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [language, setLanguage] = useState<'en' | 'ar'>('ar');
   const [isLandingView, setIsLandingView] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const savedRank = localStorage.getItem('OMNI_USER_RANK') as any;
+    // التحقق من الرتبة المحفوظة
+    const savedRank = localStorage.getItem('OMNI_USER_RANK');
     if (savedRank && savedRank !== 'Guest') {
       setIsLandingView(false);
     }
-    setIsLoaded(true); 
     
-    const loadData = async () => {
+    const loadInitialData = async () => {
       try {
-        const [c, d, t, b] = await Promise.all([
-          getContacts(),
-          getDeals(),
-          getTasks(),
-          getBrandProfile()
+        const [c, d, b, t] = await Promise.all([
+          getContacts(), 
+          getDeals(), 
+          getBrandProfile(),
+          getTasks()
         ]);
-        setContacts(c || []);
-        setDeals(d || []);
-        setTasks(t || []);
-        if (b) setBrand(prev => ({ ...prev, ...b, rank: savedRank || b.rank || 'Guest' }));
-      } catch (e) {
-        console.warn("Data Sync Bypass: Offline Mode.");
+        if (c && c.length > 0) setContacts(c);
+        if (d && d.length > 0) setDeals(d);
+        if (t && t.length > 0) setTasks(t);
+        if (b) setBrand(prev => ({ ...prev, ...b, rank: (savedRank as any) || b.rank || 'Guest' }));
+      } catch (err) {
+        console.warn("Omni OS: Sync Engine offline. Local session active.");
+      } finally {
+        setIsLoaded(true);
       }
     };
-    loadData();
+
+    loadInitialData();
   }, []);
 
-  const handleLaunch = (rank: 'Commander' | 'Operator' | 'Guest') => {
-    localStorage.setItem('OMNI_USER_RANK', rank);
-    setBrand(prev => ({ ...prev, rank }));
-    setIsLandingView(false);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('OMNI_USER_RANK');
-    setBrand(INITIAL_BRAND);
-    setIsLandingView(true);
-  };
-
-  const deductTokens = async (amount: number) => {
-    if (brand.rank === 'Commander') return true;
+  const deductTokens = useCallback(async (amount: number) => {
     if (brand.tokens < amount) {
-      alert(language === 'ar' ? 'رأس مالك التشغيلي غير كافٍ!' : 'Insufficient Operational Capital!');
+      alert(language === 'ar' ? 'رصيد التوكنات غير كافٍ' : 'Insufficient tokens');
       return false;
     }
-    const newBrand = { ...brand, tokens: brand.tokens - amount };
-    setBrand(newBrand);
-    try { await updateBrandProfile(newBrand); } catch (e) {}
+    const newTokens = brand.tokens - amount;
+    setBrand(prev => ({ ...prev, tokens: newTokens }));
+    try {
+      await updateBrandProfile({ tokens: newTokens });
+    } catch (e) {
+      console.warn("Token cloud sync failed.");
+    }
     return true;
-  };
-
-  const handleUpdateDeal = (updatedDeal: Deal) => {
-    setDeals(deals.map(d => d.id === updatedDeal.id ? updatedDeal : d));
-  };
-
-  const handleAddTask = (task: Task) => setTasks([task, ...tasks]);
-  const handleToggleTask = (id: string) => setTasks(tasks.map(t => t.id === id ? { ...t, status: t.status === 'Pending' ? 'Completed' : 'Pending' } : t));
-  const handleDeleteTask = (id: string) => setTasks(tasks.filter(t => t.id !== id));
+  }, [brand.tokens, language]);
 
   if (!isLoaded) return null;
-  if (isLandingView) return <LandingPage onLaunch={handleLaunch} />;
 
-  const isCommander = brand.rank === 'Commander';
+  // إذا كنا في وضع الهبوط، نعرض صفحة الهبوط فقط
+  if (isLandingView) {
+    return <LandingPage onLaunch={(rank) => {
+      localStorage.setItem('OMNI_USER_RANK', rank);
+      setIsLandingView(false);
+    }} />;
+  }
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case NavigationTab.Dashboard:
+        return <Dashboard contacts={contacts} deals={deals} brand={brand} language={language} />;
+      case NavigationTab.Contacts:
+        return <ContactList contacts={contacts} language={language} onAddContact={c => setContacts([c, ...contacts])} />;
+      case NavigationTab.Deals:
+        return <DealsPipeline deals={deals} contacts={contacts} language={language} onAddDeal={d => setDeals([d, ...deals])} />;
+      case NavigationTab.NeuroSales:
+        return <BehaviorExpert language={language} brand={brand} />;
+      case NavigationTab.ShadowIntel:
+        return <ShadowIntel brand={brand} language={language} />;
+      case NavigationTab.WarRoom:
+        return <StrategicWarRoom brand={brand} language={language} />;
+      case NavigationTab.MediaLab:
+        return <MediaLab brand={brand} language={language} deductTokens={deductTokens} />;
+      case NavigationTab.AgentFleet:
+        return <AgentFleet brand={brand} language={language} />;
+      case NavigationTab.Marketing:
+        return <MarketingCenter language={language} brand={brand} deductTokens={deductTokens} />;
+      case NavigationTab.GrowthLab:
+        return <GrowthLab brand={brand} language={language} />;
+      case NavigationTab.KnowledgeBase:
+        return <KnowledgeBase brand={brand} setBrand={setBrand} language={language} />;
+      case NavigationTab.Consultant:
+        return <AIConsultant contacts={contacts} deals={deals} brand={brand} language={language} deductTokens={deductTokens} />;
+      case NavigationTab.EdgeAI:
+        return <EdgeIntelligence language={language} />;
+      case NavigationTab.Admin:
+        return <AdminPortal brand={brand} language={language} />;
+      default:
+        return <Dashboard contacts={contacts} deals={deals} brand={brand} language={language} />;
+    }
+  };
 
   return (
-    <div className={`flex h-screen ${isCommander ? 'bg-[#020617]' : 'bg-slate-50'} text-slate-200 overflow-hidden font-sans transition-colors duration-1000`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
-      <Sidebar 
-        brand={brand} 
-        activeTab={activeTab} 
-        setActiveTab={(tab) => { setActiveTab(tab); setIsSidebarOpen(false); }} 
-        language={language} 
-        onOpenGuide={() => setIsGuideOpen(true)} 
-      />
+    <div className="flex h-screen w-screen bg-[#020617] text-slate-200 overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} language={language} brand={brand} />
 
-      <main className="flex-1 overflow-y-auto flex flex-col relative bg-transparent">
-        {/* Cinematic Header */}
-        <header className={`px-10 py-6 border-b ${isCommander ? 'border-white/5 bg-slate-900/40' : 'border-slate-200 bg-white'} backdrop-blur-3xl sticky top-0 z-[100] transition-all`}>
+      <main className="flex-1 flex flex-col h-full overflow-hidden relative">
+        <header className="px-10 py-6 border-b border-white/5 bg-slate-900/60 backdrop-blur-3xl z-50">
           <div className="flex justify-between items-center max-w-7xl mx-auto w-full">
-            <div className="flex items-center gap-6">
-               <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-white text-xl p-2"><i className="fa-solid fa-bars"></i></button>
-               <div className="flex flex-col">
-                  <h1 className={`text-2xl font-black tracking-tighter uppercase ${isCommander ? 'text-white' : 'text-slate-900'}`}>{brand.name}</h1>
-                  <div className="flex items-center gap-2">
-                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                     <span className="text-[8px] font-black uppercase tracking-[0.4em] text-indigo-500">SECURE NODE: {brand.rank} ACTIVE</span>
-                  </div>
+            <div className="flex flex-col">
+               <h1 className="text-xl font-black tracking-tighter text-white uppercase leading-none mb-1">{brand.name}</h1>
+               <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className="text-[7px] font-black uppercase tracking-[0.4em] text-indigo-500">SYSTEM SECURE</span>
                </div>
             </div>
-            
-            <div className="flex items-center gap-8">
-              <div className={`px-6 py-2 rounded-2xl flex items-center gap-3 border shadow-sm transition-all ${isCommander ? 'bg-indigo-600/10 border-indigo-500/30' : 'bg-slate-100 border-slate-200'}`}>
-                <i className="fa-solid fa-bolt-lightning text-indigo-500 text-[10px]"></i>
-                <span className={`text-xs font-black ${isCommander ? 'text-white' : 'text-slate-900'}`}>{isCommander ? 'UNLIMITED ENERGY' : brand.tokens.toLocaleString()}</span>
-              </div>
-              
-              <button onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')} className="text-[10px] font-black text-slate-500 hover:text-indigo-500 uppercase tracking-widest transition-all">
-                 {language === 'ar' ? 'ENGLISH OS' : 'نظام عربي'}
-              </button>
-              
-              <button onClick={handleLogout} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${isCommander ? 'bg-white/5 border-white/5 text-slate-400 hover:bg-rose-500/20 hover:text-rose-500' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-slate-200'}`}>
-                 <i className="fa-solid fa-power-off"></i>
-              </button>
+            <div className="flex items-center gap-6">
+               <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-xl border border-white/10">
+                  <i className="fa-solid fa-coins text-amber-500 text-[10px]"></i>
+                  <span className="text-[11px] font-black text-white">{brand.tokens.toLocaleString()}</span>
+               </div>
+               <button onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')} className="px-3 py-1.5 rounded-lg text-[9px] font-black text-slate-400 hover:text-white border border-white/5 uppercase tracking-widest transition-all">
+                  {language === 'ar' ? 'EN' : 'AR'}
+               </button>
             </div>
           </div>
         </header>
 
-        {/* Tactical Content Area */}
-        <div className="p-6 md:p-12 max-w-7xl mx-auto w-full flex-1">
-          {activeTab === NavigationTab.Dashboard && <Dashboard contacts={contacts} deals={deals} language={language} brand={brand} deductTokens={deductTokens} />}
-          {activeTab === NavigationTab.Contacts && <ContactList contacts={contacts} language={language} onAddContact={(c) => setContacts([c, ...contacts])} />}
-          {activeTab === NavigationTab.Deals && <DealsPipeline deals={deals} contacts={contacts} language={language} onAddDeal={(d) => setDeals([d, ...deals])} onUpdateDeal={handleUpdateDeal} />}
-          {activeTab === NavigationTab.Tasks && <ActionMatrix tasks={tasks} deals={deals} contacts={contacts} language={language} onAddTask={handleAddTask} onToggleTask={handleToggleTask} onDeleteTask={handleDeleteTask} />}
-          {activeTab === NavigationTab.KnowledgeBase && <KnowledgeBase brand={brand} setBrand={setBrand} language={language} />}
-          {activeTab === NavigationTab.AI_Consultant && <AIConsultant contacts={contacts} deals={deals} language={language} brand={brand} deductTokens={deductTokens} />}
-          {activeTab === NavigationTab.Marketing && <MarketingCenter language={language} brand={brand} deductTokens={deductTokens} />}
-          {activeTab === NavigationTab.GrowthLab && <GrowthLab brand={brand} language={language} />}
-          {activeTab === NavigationTab.BehaviorExpert && <BehaviorExpert language={language} brand={brand} deductTokens={deductTokens} />}
-          {activeTab === NavigationTab.MediaLab && <MediaLab brand={brand} language={language} deductTokens={deductTokens} />}
-          {activeTab === NavigationTab.EdgeAI && <EdgeIntelligence language={language} />}
-          {activeTab === NavigationTab.WarRoom && <StrategicWarRoom brand={brand} language={language} />}
-          {activeTab === NavigationTab.Intelligence && <MarketIntelligence brand={brand} language={language} />}
-          {activeTab === NavigationTab.AgentFleet && <AgentFleet brand={brand} language={language} />}
-          {activeTab === NavigationTab.AdminPortal && <AdminPortal brand={brand} language={language} />}
-          {activeTab === NavigationTab.Settings && <AccountSettings language={language} brand={brand} setBrand={setBrand} />}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-10">
+          <div className="max-w-7xl mx-auto w-full">
+            {renderContent()}
+          </div>
         </div>
-
-        <footer className="p-8 text-center">
-           <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.5em]">OmniCRM Ultimate v2.5 Elite • USC Global Intelligence Node</p>
-        </footer>
       </main>
-
-      <SmartGuide isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} language={language} />
     </div>
   );
 };

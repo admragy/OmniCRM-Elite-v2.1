@@ -8,158 +8,141 @@ interface AdminPortalProps {
 }
 
 const AdminPortal: React.FC<AdminPortalProps> = ({ brand, language }) => {
-  const [activeSection, setActiveSection] = useState<number>(0);
+  const [copied, setCopied] = useState(false);
 
   const t = {
     en: {
-      title: 'Commander Command Center',
-      subtitle: 'Systemic Architecture & Administrative Strategic Control.',
-      sections: [
-        {
-          id: 0,
-          title: 'Authority Hierarchy',
-          icon: 'fa-users-gear',
-          content: 'The system operates on a Neural Rank hierarchy. Command privileges (Commander) allow for database migration and capital allocation. Operators focus on task execution. Guests are restricted from resource consumption.'
-        },
-        {
-          id: 1,
-          title: 'Intelligence Calibration',
-          icon: 'fa-brain-circuit',
-          content: 'Strategic calibration is the foundation of Oracle logic. To optimize AI output, provide: 1. Core Mission 2. Typical Partner Profile 3. Strategic Tone. The more specific the calibration, the higher the ROI of AI insights.'
-        },
-        {
-          id: 2,
-          title: 'Operational Capital Allocation',
-          icon: 'fa-bolt-lightning',
-          content: 'Tokens are the energy units required for all high-fidelity operations. Use the Strategic Master Key in Settings to allocate capital. Each AI request utilizes a fraction of this capital based on strategic complexity.'
-        },
-        {
-          id: 3,
-          title: 'Unified Sovereignty Architecture',
-          icon: 'fa-cloud-binary',
-          content: 'OmniCRM utilizes a unified architecture for global persistence and local privacy. For maximum security, utilize the Edge Intelligence node to process high-value data without cloud dependency.'
-        }
-      ],
-      quickActions: 'Strategic Master Key: admin82@ragy',
-      deploymentTitle: 'Cloud Infrastructure Readiness',
-      deploymentSteps: [
-        'Initialize Unified Storage Node',
-        'Execute Data Migration Script from Settings',
-        'Verify Strategic Connectivity in Dashboard'
-      ]
+      title: 'Strategic Command Portal',
+      subtitle: 'Systemic Architecture & Database Supremacy.',
+      sqlTitle: 'Supabase Schema Initialization (God-Mode)',
+      autoPilot: 'Auto-Pilot Configuration',
+      copy: 'Copy Deployment Script'
     },
     ar: {
-      title: 'مركز قيادة القائد (Commander Portal)',
-      subtitle: 'الهيكل التنظيمي والتحكم الاستراتيجي في مفاصل النظام.',
-      sections: [
-        {
-          id: 0,
-          title: 'تسلسل السلطة والصلاحيات',
-          icon: 'fa-users-gear',
-          content: 'يعمل النظام بنظام الرتب العصبية. صلاحيات القائد (Commander) تتيح التحكم المطلق في البيانات وتخصيص الميزانية. المشغل (Operator) يركز على التنفيذ، بينما يقتصر وصول الزوار على الاستعراض فقط.'
-        },
-        {
-          id: 1,
-          title: 'معايرة الذكاء الاستراتيجي',
-          icon: 'fa-brain-circuit',
-          content: 'تعد المعايرة هي الجينوم الأساسي الذي يبني عليه الأوراكل استنتاجاته. لتحسين النتائج: حدد المهمة الجوهرية، ملف الشريك المستهدف، واللهجة الاستراتيجية. دقة المعايرة ترفع جودة الرؤى المستخرجة بشكل استثنائي.'
-        },
-        {
-          id: 2,
-          title: 'تخصيص الرأس مال التشغيلي',
-          icon: 'fa-bolt-lightning',
-          content: 'وحدات الطاقة هي الرأس مال اللازم لتشغيل العمليات فائقة الدقة. استخدم مفتاح المسؤول الاستراتيجي لشحن الميزانية. كل طلب ذكاء اصطناعي يمثل استثماراً تشغيلياً يختلف حسب تعقيد المهمة.'
-        },
-        {
-          id: 3,
-          title: 'بنية السيادة الرقمية الموحدة',
-          icon: 'fa-cloud-binary',
-          content: 'يجمع OmniCRM بين المزامنة العالمية والخصوصية المحلية المطلقة. للبيانات فائقة الحساسية، يفضل استخدام عقدة المعالجة المحلية لضمان سيادة البيانات بالكامل داخل جهازك.'
-        }
-      ],
-      quickActions: 'مفتاح المسؤول الاستراتيجي: admin82@ragy',
-      deploymentTitle: 'جاهزية البنية التحتية السحابية',
-      deploymentSteps: [
-        'تهيئة عقدة التخزين الموحدة (Supabase)',
-        'تنفيذ كود هجرة البيانات من مركز الإعدادات',
-        'التحقق من حالة الربط الاستراتيجي في لوحة القيادة'
-      ]
+      title: 'بوابة القيادة الاستراتيجية',
+      subtitle: 'الهيكل التنظيمي والسيادة الرقمية لقاعدة البيانات.',
+      sqlTitle: 'تهيئة مخطط قاعدة البيانات (God-Mode)',
+      autoPilot: 'إعدادات الطيار الآلي',
+      copy: 'نسخ كود التهيئة'
     }
   }[language];
 
+  const sqlCode = `
+-- 1. Create Contacts Table with Psychology DNA
+CREATE TABLE IF NOT EXISTS contacts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  company TEXT,
+  email TEXT,
+  phone TEXT,
+  status TEXT DEFAULT 'Lead',
+  value NUMERIC DEFAULT 0,
+  psychology JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2. Create Deals Table with ROAS tracking
+CREATE TABLE IF NOT EXISTS deals (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  contact_id UUID REFERENCES contacts(id),
+  value NUMERIC DEFAULT 0,
+  stage TEXT DEFAULT 'Discovery',
+  ad_spend NUMERIC DEFAULT 0,
+  roas NUMERIC DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3. Create Brand Profile Table
+CREATE TABLE IF NOT EXISTS brand_profile (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  name TEXT,
+  industry TEXT,
+  tokens INTEGER DEFAULT 1000,
+  auto_pilot_settings JSONB DEFAULT '{"maxAdSpend": 500, "targetRoas": 4}'
+);
+
+-- 4. Create Competitor Scans Table
+CREATE TABLE IF NOT EXISTS competitor_scans (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT,
+  url TEXT,
+  last_price NUMERIC,
+  offers JSONB,
+  threat_level TEXT,
+  last_scan TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+  `;
+
   return (
-    <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-1000 pb-32" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="max-w-7xl mx-auto space-y-12 pb-32 animate-in fade-in" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       
-      {/* Header Panel */}
-      <div className="bg-slate-900 rounded-[4rem] p-12 md:p-16 border border-white/5 relative overflow-hidden group shadow-3xl">
-         <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-indigo-600/10 via-transparent to-transparent"></div>
-         <div className="relative z-10">
-            <div className="flex items-center gap-4 mb-8">
-               <div className="w-16 h-16 bg-indigo-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-indigo-600/30">
-                  <i className="fa-solid fa-crown text-white text-3xl"></i>
-               </div>
-               <div>
-                  <h2 className="text-4xl font-black text-white tracking-tighter">{t.title}</h2>
-                  <p className="text-slate-400 font-bold text-sm tracking-widest uppercase mt-1">{t.subtitle}</p>
-               </div>
+      <div className="bg-[#020617] rounded-[4rem] p-16 border border-white/5 relative overflow-hidden shadow-4xl">
+         <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-indigo-600/20 via-transparent to-transparent"></div>
+         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center">
+            <div>
+               <h2 className="text-5xl font-black text-white tracking-tighter mb-4">{t.title}</h2>
+               <p className="text-slate-400 font-bold text-sm tracking-[0.5em] uppercase">{t.subtitle}</p>
             </div>
-            <div className="px-8 py-4 bg-white/5 rounded-2xl border border-white/10 inline-block">
-               <span className="text-indigo-400 font-mono font-black text-xs uppercase tracking-[0.2em]">{t.quickActions}</span>
+            <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center shadow-2xl">
+               <i className="fa-solid fa-crown text-white text-3xl"></i>
             </div>
          </div>
-         <i className="fa-solid fa-shield-quartered text-[180px] text-white/5 absolute -right-10 -bottom-10 rotate-12"></i>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        
-        {/* Navigation Grid */}
-        <div className="lg:col-span-1 space-y-4">
-           {t.sections.map((section, idx) => (
-             <button 
-               key={section.id}
-               onClick={() => setActiveSection(idx)}
-               className={`w-full flex items-center gap-5 p-8 rounded-[2.5rem] transition-all duration-500 border ${
-                 activeSection === idx 
-                 ? 'bg-indigo-600 border-indigo-500 text-white shadow-2xl scale-[1.02]' 
-                 : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-500 hover:bg-white/10'
-               }`}
-             >
-               <i className={`fa-solid ${section.icon} text-2xl`}></i>
-               <span className="text-sm font-black uppercase tracking-widest">{section.title}</span>
-             </button>
-           ))}
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+         <div className="bg-slate-900 p-12 rounded-[4rem] border border-white/5 shadow-2xl space-y-8">
+            <h3 className="text-2xl font-black text-white tracking-tight flex items-center gap-4">
+               <i className="fa-solid fa-database text-emerald-400"></i>
+               {t.sqlTitle}
+            </h3>
+            <div className="bg-black/50 p-8 rounded-3xl border border-white/10 font-mono text-xs text-emerald-400 overflow-x-auto h-96 custom-scrollbar">
+               <pre>{sqlCode}</pre>
+            </div>
+            <button 
+               onClick={() => { navigator.clipboard.writeText(sqlCode); setCopied(true); setTimeout(()=>setCopied(false), 2000); }}
+               className="w-full py-6 bg-emerald-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-emerald-500 transition-all flex items-center justify-center gap-4"
+            >
+               <i className={`fa-solid ${copied ? 'fa-check' : 'fa-copy'}`}></i>
+               {copied ? 'COPIED TO CLIPBOARD' : t.copy}
+            </button>
+         </div>
 
-        {/* Content Panel */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[4rem] p-12 md:p-16 border border-slate-100 dark:border-slate-800 shadow-2xl relative">
-           <div className="animate-in slide-in-from-bottom-5 duration-700">
-              <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-8 tracking-tighter border-b border-slate-100 dark:border-slate-800 pb-6 flex items-center gap-4">
-                 <i className={`fa-solid ${t.sections[activeSection].icon} text-indigo-500`}></i>
-                 {t.sections[activeSection].title}
-              </h3>
-              <p className="text-slate-600 dark:text-slate-300 font-medium text-lg leading-loose">
-                 {t.sections[activeSection].content}
-              </p>
-           </div>
-        </div>
-      </div>
+         <div className="bg-slate-900 p-12 rounded-[4rem] border border-white/5 shadow-2xl space-y-10">
+            <h3 className="text-2xl font-black text-white tracking-tight flex items-center gap-4">
+               <i className="fa-solid fa-shuttle-space text-indigo-400"></i>
+               {t.autoPilot}
+            </h3>
+            
+            <div className="space-y-8">
+               <div className="flex justify-between items-center p-8 bg-white/5 rounded-3xl border border-white/10">
+                  <div>
+                     <p className="text-white font-black text-lg">Max Daily Ad Spend</p>
+                     <p className="text-slate-500 text-xs uppercase tracking-widest">Automatic cut-off limit</p>
+                  </div>
+                  <input type="number" defaultValue={500} className="w-32 bg-black/40 p-4 rounded-xl border border-white/10 text-white font-black text-right" />
+               </div>
 
-      {/* Deployment Checklist */}
-      <div className="bg-emerald-950/40 rounded-[4rem] p-12 border border-emerald-500/20 shadow-3xl">
-         <h4 className="text-2xl font-black text-emerald-400 tracking-tighter mb-10 flex items-center gap-4">
-            <i className="fa-solid fa-list-check"></i>
-            {t.deploymentTitle}
-         </h4>
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {t.deploymentSteps.map((step, i) => (
-              <div key={i} className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 flex items-start gap-5">
-                 <div className="w-10 h-10 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center shrink-0 font-black">{i+1}</div>
-                 <p className="text-white font-bold text-sm leading-relaxed">{step}</p>
-              </div>
-            ))}
+               <div className="flex justify-between items-center p-8 bg-white/5 rounded-3xl border border-white/10">
+                  <div>
+                     <p className="text-white font-black text-lg">Target ROAS Threshold</p>
+                     <p className="text-slate-500 text-xs uppercase tracking-widest">AI Profitability Guard</p>
+                  </div>
+                  <input type="number" defaultValue={4.5} className="w-32 bg-black/40 p-4 rounded-xl border border-white/10 text-white font-black text-right" />
+               </div>
+
+               <div className="p-8 bg-indigo-600/10 rounded-3xl border border-indigo-500/20 flex items-center gap-6">
+                  <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-xl">
+                     <i className="fa-solid fa-toggle-on"></i>
+                  </div>
+                  <div>
+                     <p className="text-white font-black">Dynamic Scaling Mode</p>
+                     <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">Auto-Scale budget when ROAS > 10x</p>
+                  </div>
+               </div>
+            </div>
          </div>
       </div>
-
     </div>
   );
 };

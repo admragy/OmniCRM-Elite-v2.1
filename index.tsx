@@ -1,29 +1,39 @@
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 
 const container = document.getElementById('root');
 
-const hideBootScreen = () => {
-  const boot = document.getElementById('boot-screen');
-  if (boot) {
-    boot.style.opacity = '0';
-    boot.style.transition = 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-    setTimeout(() => boot.remove(), 800);
+const hideLoader = () => {
+  const loader = document.getElementById('boot-loader');
+  if (loader) {
+    loader.style.opacity = '0';
+    setTimeout(() => {
+      if (loader.parentNode) loader.remove();
+    }, 800);
   }
 };
 
 if (container) {
   try {
     const root = createRoot(container);
-    root.render(<App />);
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
     
-    // إخفاء الشاشة بعد استقرار التحميل
+    // إخفاء التحميل بمجرد أن يبدأ المتصفح في معالجة المكونات
     requestAnimationFrame(() => {
-      setTimeout(hideBootScreen, 1000);
+      setTimeout(hideLoader, 500);
     });
   } catch (error) {
-    console.error("Critical rendering error:", error);
-    hideBootScreen(); // لا نترك المستخدم في شاشة التحميل للأبد
+    console.error("Omni OS Boot Error:", error);
+    const loaderP = document.querySelector('#boot-loader p');
+    if (loaderP) {
+      loaderP.textContent = "CRITICAL ERROR. CHECK CONSOLE.";
+      (loaderP as HTMLElement).style.color = "#f43f5e";
+    }
   }
 }
