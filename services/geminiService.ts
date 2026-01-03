@@ -26,7 +26,11 @@ export const runNeuroAnalysis = async (chatHistory: string, industry: string, la
     }
     CHAT: ${chatHistory}`,
   });
-  return JSON.parse(response.text || '{}');
+  try {
+    return JSON.parse(response.text || '{}');
+  } catch (e) {
+    return {};
+  }
 };
 
 // رادار التجسس (Shadow Intel)
@@ -44,12 +48,6 @@ export const scanCompetitors = async (
     deep: 15000
   };
 
-  const depthContext = {
-    shallow: "Perform a quick scan of the primary website and major social profiles.",
-    standard: "Conduct a comprehensive scan of the website, recent news articles, and active ad campaigns.",
-    deep: "Execute an exhaustive intelligence gathering mission including historical pricing trends, employee sentiment, full social media footprint, and deep market comparisons."
-  }[depth];
-
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: `
@@ -57,11 +55,9 @@ export const scanCompetitors = async (
       TARGET: ${brandName}
       INDUSTRY: ${industry}
       SCAN DEPTH: ${depth.toUpperCase()}
-      DEPTH CONTEXT: ${depthContext}
-      DATA POINTS TO EXTRACT: ${dataPoints.join(', ')}
+      DATA POINTS: ${dataPoints.join(', ')}
       
-      Provide a highly strategic report in ${language === 'ar' ? 'Arabic' : 'English'}. 
-      Focus on revealing tactical weaknesses, pricing gaps, and specific counter-strategies.
+      Provide a strategic report in ${language === 'ar' ? 'Arabic' : 'English'}.
     `,
     config: { 
       tools: [{ googleSearch: {} }],
@@ -74,101 +70,17 @@ export const scanCompetitors = async (
   };
 };
 
-// مكنسة البيانات (Data Vacuum)
-export const vacuumData = async (rawInput: string) => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    config: { responseMimeType: "application/json" },
-    contents: `Extract all entities (Names, Emails, Phones, Order Details, Values) from this raw text and format as structured data for CRM injection: ${rawInput}`,
-  });
-  return JSON.parse(response.text || '[]');
-};
-
-// مستشار القيادة (The Oracle)
-export const getCommandDecision = async (stats: any, brand: any) => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `CRITICAL STATS: ${JSON.stringify(stats)}. AUTO-PILOT SETTINGS: ${JSON.stringify(brand.autoPilot)}. 
-    As the Strategic Commander, what is your next tactical move? Should we scale ads, pivot offers, or cut losses?`,
-    config: { thinkingConfig: { thinkingBudget: 8000 } }
-  });
-  return response.text;
-};
-
-// إثراء بيانات جهات الاتصال (Deep Web Enrichment)
-export const enrichContactData = async (companyName: string, language: 'en' | 'ar') => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `Perform a deep research on the company "${companyName}". Find their main products, target market, recent news, and potential business needs in ${language === 'ar' ? 'Arabic' : 'English'}.`,
-    config: { tools: [{ googleSearch: {} }] }
-  });
-  return response.text;
-};
-
-// نبض السوق (Market Intelligence)
-export const getMarketIntelligence = async (industry: string, language: 'en' | 'ar') => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `Analyze current global market trends and gaps in the ${industry} industry. Provide a detailed report and list specific opportunities in ${language === 'ar' ? 'Arabic' : 'English'}.`,
-    config: { tools: [{ googleSearch: {} }] }
-  });
-  return {
-    report: response.text,
-    trends: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
-  };
-};
-
-// تحديد الأولويات الاستراتيجية (Strategic Priorities)
-export const getStrategicPriorities = async (contacts: Contact[], deals: Deal[], language: 'en' | 'ar') => {
-  const ai = getAI();
-  const stats = {
-    totalLeads: contacts.length,
-    dealVolume: deals.reduce((acc, d) => acc + d.value, 0),
-    topDeals: deals.sort((a, b) => b.value - a.value).slice(0, 3)
-  };
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            task: { type: Type.STRING },
-            impact: { type: Type.STRING, enum: ['High', 'Medium', 'Low'] }
-          },
-          required: ['task', 'impact']
-        }
-      }
-    },
-    contents: `Given these CRM stats: ${JSON.stringify(stats)}, generate a list of 5 high-impact strategic tasks to grow revenue. Language: ${language}.`
-  });
-  try {
-    return JSON.parse(response.text || '[]');
-  } catch {
-    return [];
-  }
-};
-
 // تحليل المخاطر الجيومكانية (Global Risk Analysis)
 export const analyzeGlobalRisk = async (query: string, lat: number, lng: number, language: 'en' | 'ar') => {
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
-    contents: `Analyze spatial risks and market grounding for: ${query}. Use current location context: ${lat}, ${lng}. Language: ${language}.`,
+    contents: `Analyze spatial risks for: ${query}. Location: ${lat}, ${lng}. Language: ${language}.`,
     config: { 
       tools: [{ googleMaps: {} }, { googleSearch: {} }],
       toolConfig: {
         retrievalConfig: {
-          latLng: {
-            latitude: lat,
-            longitude: lng
-          }
+          latLng: { latitude: lat, longitude: lng }
         }
       }
     }
@@ -179,24 +91,102 @@ export const analyzeGlobalRisk = async (query: string, lat: number, lng: number,
   };
 };
 
-// محاكاة الوكلاء (Agent Simulation)
-export const runAgentSimulation = async (problem: string, brand: any, language: 'en' | 'ar') => {
+// --- الأدوات المساعدة ---
+export const getCommandDecision = async (stats: any, brand: any) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
-    config: { thinkingConfig: { thinkingBudget: 15000 } },
-    contents: `Act as a War Room of 3 experts: a Strategist, an Analyst, and a Security Expert. Debate and provide a unified solution for this business problem: "${problem}". 
-    Brand Context: ${JSON.stringify(brand)}. Language: ${language}.`
+    contents: `STATS: ${JSON.stringify(stats)}. BRAND: ${JSON.stringify(brand)}. Command next tactical move.`,
+    config: { thinkingConfig: { thinkingBudget: 4000 } }
   });
   return response.text;
 };
 
-// استراتيجية النمو (Growth Strategy)
+export const getMarketIntelligence = async (industry: string, language: 'en' | 'ar') => {
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: `Scan market gaps in ${industry}. Language: ${language}.`,
+    config: { tools: [{ googleSearch: {} }] }
+  });
+  return {
+    report: response.text,
+    trends: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
+  };
+};
+
+// enrichment of contact data using deep web search
+export const enrichContactData = async (company: string, language: 'en' | 'ar') => {
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: `Perform a deep web research on the company: ${company}. 
+    Provide a strategic business profile in ${language === 'ar' ? 'Arabic' : 'English'} including their focus, strengths, and potential business needs.`,
+    config: { tools: [{ googleSearch: {} }] }
+  });
+  return response.text;
+};
+
+// analyze CRM data and generate high-impact strategic tasks
+export const getStrategicPriorities = async (contacts: Contact[], deals: Deal[], language: 'en' | 'ar') => {
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: `Based on the following CRM data, prioritize the most effective growth tasks.
+    Contacts: ${JSON.stringify(contacts.slice(0, 15))}
+    Deals: ${JSON.stringify(deals.slice(0, 15))}
+    
+    Return a JSON array of tasks where each task has a "task" description and an "impact" level (High, Medium, Low).
+    Language: ${language === 'ar' ? 'Arabic' : 'English'}.`,
+    config: { 
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            task: { type: Type.STRING },
+            impact: { type: Type.STRING }
+          },
+          required: ["task", "impact"]
+        }
+      }
+    }
+  });
+  try {
+    return JSON.parse(response.text || '[]');
+  } catch (e) {
+    return [];
+  }
+};
+
+// simulate a tactical discussion among specialized agents
+export const runAgentSimulation = async (problem: string, brand: any, language: 'en' | 'ar') => {
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: `PROBLEM: ${problem}
+    BRAND IDENTITY: ${brand.name} (${brand.industry})
+    
+    Conduct a War Room simulation with three agents:
+    - Tactician: Strategic maneuvers.
+    - Analyst: Market and data insights.
+    - Security Expert: Risk mitigation.
+    
+    Synthesize their debate into a final tactical recommendation in ${language === 'ar' ? 'Arabic' : 'English'}.`,
+    config: { thinkingConfig: { thinkingBudget: 12000 } }
+  });
+  return response.text;
+};
+
+// extract viral growth strategies using market trends
 export const getGrowthStrategy = async (industry: string, language: 'en' | 'ar') => {
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
-    contents: `Develop a guerrilla growth marketing strategy for a company in ${industry}. Focus on viral hooks and community reach in ${language === 'ar' ? 'Arabic' : 'English'}.`,
+    contents: `Analyze current global market trends for the ${industry} industry. 
+    Find unconventional growth hacks and viral reach strategies that don't rely on traditional ad spend.
+    Language: ${language === 'ar' ? 'Arabic' : 'English'}.`,
     config: { tools: [{ googleSearch: {} }] }
   });
   return {
@@ -205,54 +195,37 @@ export const getGrowthStrategy = async (industry: string, language: 'en' | 'ar')
   };
 };
 
-// توليد الصور الإعلانية (Ad Image Synthesis)
 export const generateAdImage = async (prompt: string) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
-    contents: { parts: [{ text: `Professional high-converting ad visual for: ${prompt}. Cinematic lighting, minimalist, premium brand style.` }] },
+    contents: { parts: [{ text: `High-end ad for: ${prompt}` }] },
     config: { imageConfig: { aspectRatio: '16:9' } }
   });
   const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
   return part?.inlineData ? `data:image/png;base64,${part.inlineData.data}` : null;
 };
 
-// --- Audio & Base64 Helpers for Live API ---
-
 export function decodeBase64(base64: string): Uint8Array {
   const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
   return bytes;
 }
 
 export function encodeAudio(bytes: Uint8Array): string {
   let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
 }
 
-export async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
-): Promise<AudioBuffer> {
+export async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
   for (let channel = 0; channel < numChannels; channel++) {
     const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
+    for (let i = 0; i < frameCount; i++) channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
   }
   return buffer;
 }

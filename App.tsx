@@ -45,20 +45,21 @@ const App: React.FC = () => {
     
     const loadInitialData = async () => {
       try {
+        // إذا كان المستخدم قد دخل مسبقاً، ننتقل فوراً للوحة القيادة
         if (savedRank && savedRank !== 'Guest') {
           setIsLandingView(false);
         }
 
         const [c, d, b, t] = await Promise.all([
-          getContacts(), 
-          getDeals(), 
-          getBrandProfile(),
-          getTasks()
+          getContacts().catch(() => []), 
+          getDeals().catch(() => []), 
+          getBrandProfile().catch(() => null),
+          getTasks().catch(() => [])
         ]);
         
-        if (c && c.length > 0) setContacts(c);
-        if (d && d.length > 0) setDeals(d);
-        if (t && t.length > 0) setTasks(t);
+        if (c) setContacts(c);
+        if (d) setDeals(d);
+        if (t) setTasks(t);
         if (b) setBrand(prev => ({ ...prev, ...b, rank: (savedRank as any) || b.rank || 'Guest' }));
       } catch (err) {
         console.warn("Omni OS: Sync Engine offline. Local session active.");
@@ -140,7 +141,7 @@ const App: React.FC = () => {
                <h1 className="text-xl font-black tracking-tighter text-white uppercase leading-none mb-1">{brand.name}</h1>
                <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                  <span className="text-[7px] font-black uppercase tracking-[0.4em] text-indigo-500">OPERATIONAL SYSTEM SECURE</span>
+                  <span className="text-[7px] font-black uppercase tracking-[0.4em] text-indigo-500">SYSTEM SECURE</span>
                </div>
             </div>
             <div className="flex items-center gap-6">
