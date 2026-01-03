@@ -41,20 +41,21 @@ const App: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // التحقق من الرتبة المحفوظة
     const savedRank = localStorage.getItem('OMNI_USER_RANK');
-    if (savedRank && savedRank !== 'Guest') {
-      setIsLandingView(false);
-    }
     
     const loadInitialData = async () => {
       try {
+        if (savedRank && savedRank !== 'Guest') {
+          setIsLandingView(false);
+        }
+
         const [c, d, b, t] = await Promise.all([
           getContacts(), 
           getDeals(), 
           getBrandProfile(),
           getTasks()
         ]);
+        
         if (c && c.length > 0) setContacts(c);
         if (d && d.length > 0) setDeals(d);
         if (t && t.length > 0) setTasks(t);
@@ -79,14 +80,13 @@ const App: React.FC = () => {
     try {
       await updateBrandProfile({ tokens: newTokens });
     } catch (e) {
-      console.warn("Token cloud sync failed.");
+      console.warn("Token cloud sync skipped.");
     }
     return true;
   }, [brand.tokens, language]);
 
   if (!isLoaded) return null;
 
-  // إذا كنا في وضع الهبوط، نعرض صفحة الهبوط فقط
   if (isLandingView) {
     return <LandingPage onLaunch={(rank) => {
       localStorage.setItem('OMNI_USER_RANK', rank);
@@ -134,17 +134,17 @@ const App: React.FC = () => {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} language={language} brand={brand} />
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <header className="px-10 py-6 border-b border-white/5 bg-slate-900/60 backdrop-blur-3xl z-50">
+        <header className="px-10 py-6 border-b border-white/5 bg-slate-900/60 backdrop-blur-3xl z-50 shrink-0">
           <div className="flex justify-between items-center max-w-7xl mx-auto w-full">
             <div className="flex flex-col">
                <h1 className="text-xl font-black tracking-tighter text-white uppercase leading-none mb-1">{brand.name}</h1>
                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className="text-[7px] font-black uppercase tracking-[0.4em] text-indigo-500">SYSTEM SECURE</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                  <span className="text-[7px] font-black uppercase tracking-[0.4em] text-indigo-500">OPERATIONAL SYSTEM SECURE</span>
                </div>
             </div>
             <div className="flex items-center gap-6">
-               <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-xl border border-white/10">
+               <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-xl border border-white/10 shadow-inner">
                   <i className="fa-solid fa-coins text-amber-500 text-[10px]"></i>
                   <span className="text-[11px] font-black text-white">{brand.tokens.toLocaleString()}</span>
                </div>
@@ -156,7 +156,7 @@ const App: React.FC = () => {
         </header>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-10">
-          <div className="max-w-7xl mx-auto w-full">
+          <div className="max-w-7xl mx-auto w-full h-full">
             {renderContent()}
           </div>
         </div>

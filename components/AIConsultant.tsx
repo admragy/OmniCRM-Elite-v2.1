@@ -12,10 +12,9 @@ interface AIConsultantProps {
   deductTokens: (amount: number) => Promise<boolean>;
 }
 
-const AIConsultant: React.FC<AIConsultantProps> = ({ language, deductTokens }) => {
+const AIConsultant: React.FC<AIConsultantProps> = ({ language, deductTokens, brand }) => {
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState<'Strategic' | 'Tactical' | 'Combat'>('Strategic');
-  const [transcriptions, setTranscriptions] = useState<string[]>([]);
   const [status, setStatus] = useState<'idle' | 'connecting' | 'listening' | 'speaking'>('idle');
   
   const streamRef = useRef<MediaStream | null>(null);
@@ -28,7 +27,6 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ language, deductTokens }) =
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
     setIsActive(false);
     setStatus('idle');
-    setTranscriptions(prev => [...prev, "--- End of Session ---"]);
   }, []);
 
   const startSession = async () => {
@@ -89,7 +87,7 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ language, deductTokens }) =
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Charon' } } },
-          systemInstruction: `You are the Omni Oracle. Mode: ${mode}. Language: ${targetLang}. Help with strategic growth.`,
+          systemInstruction: `You are the Omni Oracle. Mode: ${mode}. Brand: ${brand.name}. Language: ${targetLang}. Help with strategic growth.`,
         }
       });
       sessionPromiseRef.current = sessionPromise;
@@ -102,30 +100,34 @@ const AIConsultant: React.FC<AIConsultantProps> = ({ language, deductTokens }) =
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] bg-slate-900/40 rounded-[4rem] p-12 border border-white/5 relative overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="flex gap-4 mb-16">
+      <div className="flex gap-4 mb-16 relative z-10">
         {['Strategic', 'Tactical', 'Combat'].map(m => (
           <button key={m} onClick={() => setMode(m as any)} className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${mode === m ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'text-slate-500 border-white/10'}`}>{m}</button>
         ))}
       </div>
       
-      <div className="text-center mb-16">
-        <h2 className="text-4xl font-black text-white tracking-tighter mb-8">{language === 'ar' ? 'الأوراكل الحي' : 'Live Oracle'}</h2>
-        <div className={`w-40 h-40 rounded-full flex items-center justify-center border-2 ${status === 'speaking' ? 'border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.2)] animate-pulse' : 'border-indigo-600'} mx-auto mb-6 transition-all`}>
-           <i className={`fa-solid ${status === 'speaking' ? 'fa-waveform-lines' : 'fa-microphone'} text-4xl text-white`}></i>
+      <div className="text-center mb-16 relative z-10">
+        <h2 className="text-4xl font-black text-white tracking-tighter mb-8 uppercase tracking-[0.2em]">{language === 'ar' ? 'الأوراكل الحي' : 'Live Oracle'}</h2>
+        <div className={`w-48 h-48 rounded-full flex items-center justify-center border-4 ${status === 'speaking' ? 'border-emerald-500 shadow-[0_0_60px_rgba(16,185,129,0.3)] animate-pulse' : status === 'listening' ? 'border-indigo-500 shadow-[0_0_60px_rgba(79,70,229,0.2)]' : 'border-slate-800'} mx-auto mb-6 transition-all duration-700`}>
+           <i className={`fa-solid ${status === 'speaking' ? 'fa-waveform-lines' : status === 'listening' ? 'fa-microphone-lines' : 'fa-microphone-slash'} text-5xl text-white`}></i>
         </div>
-        <p className="text-indigo-400 text-[9px] font-black uppercase tracking-widest">{status}</p>
+        <p className="text-indigo-400 text-[10px] font-black uppercase tracking-[0.5em]">{status}</p>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 relative z-10">
         {!isActive ? (
-          <button onClick={startSession} className="px-12 py-5 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all">
-            {language === 'ar' ? 'بدء الاتصال' : 'Engage Link'}
+          <button onClick={startSession} className="px-12 py-5 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">
+            {language === 'ar' ? 'بدء الاتصال الاستراتيجي' : 'Engage Strategic Link'}
           </button>
         ) : (
-          <button onClick={stopSession} className="px-12 py-5 bg-rose-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all">
-            {language === 'ar' ? 'إنهاء الجلسة' : 'Terminate'}
+          <button onClick={stopSession} className="px-12 py-5 bg-rose-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">
+            {language === 'ar' ? 'إنهاء الجلسة' : 'Terminate Link'}
           </button>
         )}
+      </div>
+
+      <div className="absolute inset-0 pointer-events-none opacity-20">
+         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(79,70,229,0.1),transparent)]"></div>
       </div>
     </div>
   );

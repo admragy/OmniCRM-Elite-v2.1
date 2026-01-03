@@ -11,7 +11,7 @@ const hideLoader = () => {
     loader.style.opacity = '0';
     setTimeout(() => {
       if (loader.parentNode) loader.remove();
-    }, 800);
+    }, 600);
   }
 };
 
@@ -23,17 +23,13 @@ if (container) {
         <App />
       </React.StrictMode>
     );
-    
-    // إخفاء التحميل بمجرد أن يبدأ المتصفح في معالجة المكونات
-    requestAnimationFrame(() => {
-      setTimeout(hideLoader, 500);
-    });
+    setTimeout(hideLoader, 1500);
   } catch (error) {
-    console.error("Omni OS Boot Error:", error);
+    console.error("Omni OS Critical Error:", error);
     const loaderP = document.querySelector('#boot-loader p');
     if (loaderP) {
-      loaderP.textContent = "CRITICAL ERROR. CHECK CONSOLE.";
-      (loaderP as HTMLElement).style.color = "#f43f5e";
+      loaderP.textContent = "SYSTEM CRASH. CHECK CONSOLE.";
+      (loaderP as HTMLElement).style.color = "#ef4444";
     }
   }
 }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OmniCRM Ultimate | Strategic Command OS</title>
+    <title>OmniCRM Elite v2.1 | Strategic Command OS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -57,6 +57,15 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(79, 70, 229, 0.2); border-radius: 10px; }
+        
+        .tactical-grid {
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle at 1px 1px, rgba(79, 70, 229, 0.05) 1px, transparent 0);
+            background-size: 30px 30px;
+            pointer-events: none;
+            z-index: 0;
+        }
     </style>
     <script type="importmap">
 {
@@ -74,9 +83,10 @@
 </script>
 </head>
 <body>
+    <div class="tactical-grid"></div>
     <div id="boot-loader">
         <div class="loader-ring"></div>
-        <p style="margin-top: 20px; font-weight: 800; color: #4f46e5; letter-spacing: 0.2em; font-size: 10px; text-transform: uppercase;">Omni OS Initializing...</p>
+        <p style="margin-top: 20px; font-weight: 800; color: #4f46e5; letter-spacing: 0.2em; font-size: 10px; text-transform: uppercase;">Omni Elite Booting...</p>
     </div>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
